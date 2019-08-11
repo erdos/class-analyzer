@@ -1,6 +1,5 @@
 (ns class-analyzer.core
-  (:import [java.io DataInputStream]
-           [java.util.jar JarEntry])
+  (:import [java.io DataInputStream])
   (:require [clojure.java.io :as io :refer [file]]))
 
 
@@ -10,24 +9,6 @@
 (defmacro ^:private  str! [x] `(doto ~x (assert ~(str "Not string: " (pr-str x)))))
 
 
-(defn- jar-entries [jar-path]
-  (assert (.exists (file jar-path))
-          (str "No such file: " (file jar-path)))
-  (let [jar-file (new java.util.jar.JarFile (file jar-path) false)]
-    (enumeration-seq (.entries jar-file))))
-
-
-(defn- jar-classes [jar-path]
-  (for [^JarEntry entry (jar-entries jar-path)
-        :let [entry-name (.getName entry)]
-        :when (.endsWith entry-name ".class")]
-    (-> entry-name
-        (.substring 0 (- (count entry-name) 6))
-        (.replace "/" ".")
-        ; (.replace "$" ".")
-        )))
-
-
 ;; https://medium.com/@davethomas_9528/writing-hello-world-in-java-byte-code-34f75428e0ad
 ;; https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html
 
@@ -35,7 +16,7 @@
 (def ^:private ^java.nio.charset.Charset UTF-8 (java.nio.charset.Charset/forName "UTF-8"))
 
 
-(defn- read-str [^DataInputStream is len]
+(defn- stream->str [^DataInputStream is len]
   (let [ba (byte-array len)]
     (loop [read-len 0]
       (if (= read-len len)
@@ -61,7 +42,7 @@
                         (.readUnsignedShort ois)]] ;; tag nameidx descriptoridx
 
     1  (let [length (.readUnsignedShort ois)]
-         [:utf8 (+ 3 length) (read-str ois length)])
+         [:utf8 (+ 3 length) (stream->str ois length)])
 
     11 [:interfacemethodred 5 [(.readUnsignedShort ois) (.readUnsignedShort ois)]] ;; tag + class idx + nameandtypeidx
 
@@ -176,7 +157,7 @@
      (-> class-idx constant-pool :data))))
 
 
-(defn- read-entry [zis]
+(defn read-entry [zis]
   (let [ois (new java.io.DataInputStream zis)]
 
     ;; magic number
@@ -202,24 +183,3 @@
        :methods     methods
        :access      (parse-access-flags access-flags)
        :constants   pool})))
-
-
-                                        ; (def example-jar "/home/erdos/.m2/repository/commons-io/commons-io/2.6/commons-io-2.6.jar")
-(def example-jar "/home/erdos/.m2/repository/org/clojure/clojure/1.10.1/clojure-1.10.1.jar")
-
-
-(with-open [fis (new java.io.FileInputStream (file example-jar))
-            zis (new java.util.zip.ZipInputStream fis)]
-  (time
-   (doseq [i (range 10000)
-           :let [entry (.getNextEntry zis)]
-           :while (some? entry)
-           :when (.endsWith (.getName entry) ".class")
-           :when (.contains (.getName entry) "")
-           ]
-     ; (println "Entry: " entry)
-     (read-entry zis))))
-
-(jar-classes example-jar)
-
-(def entry-0 (first (filter #(.contains (.getName ^JarEntry %) "ByteOrderParser") (jar-entries example-jar))))
