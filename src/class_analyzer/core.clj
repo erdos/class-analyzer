@@ -104,7 +104,7 @@
 (defn read-attributes [^java.io.DataInputStream ois constant-pool]
   (doall
    (for [i (range (.readUnsignedShort ois))
-         :let [attr-name (-> ois .readUnsignedShort constant-pool :data #_str!)
+         :let [attr-name (-> ois .readUnsignedShort constant-pool :data str!)
                attr-len (.readInt ois)
                attr     (read-attribute ois attr-name attr-len constant-pool)]]
      {:name  attr-name
@@ -130,16 +130,16 @@
                descr-idx    (.readUnsignedShort ois)
                attrs        (read-attributes ois constant-pool)]]
      {:access (parse-access-flags access-flags)
-      :name   (-> name-idx constant-pool :data)
-      :descr  (-> descr-idx constant-pool :data)
+      :name   (-> name-idx constant-pool :data str!)
+      :descr  (-> descr-idx constant-pool :data str!)
       :attrs  attrs})))
 
 (defn read-fields [^java.io.DataInputStream ois constant-pool]
   (doall
    (for [i (range (.readUnsignedShort ois))
          :let [access-flags (-> ois .readUnsignedShort parse-access-flags)
-               name         (-> ois .readUnsignedShort constant-pool :data)
-               descr        (-> ois .readUnsignedShort constant-pool :data)
+               name         (-> ois .readUnsignedShort constant-pool :data str!)
+               descr        (-> ois .readUnsignedShort constant-pool :data str!)
                attributes   (read-attributes ois constant-pool)]]
      {:name   name
       :access access-flags
@@ -150,7 +150,7 @@
   (doall
    (for [i (range (.readUnsignedShort ois))
          :let [class-idx (.readUnsignedShort ois)]]
-     (-> class-idx constant-pool :data))))
+     (-> class-idx constant-pool :data str!))))
 
 
 (defn read-entry [zis]
