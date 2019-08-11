@@ -32,12 +32,14 @@
 ;; https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html
 
 
+(def ^:private ^java.nio.charset.Charset UTF-8 (java.nio.charset.Charset/forName "UTF-8"))
+
+
 (defn- read-str [^DataInputStream is len]
   (let [ba (byte-array len)]
-    ;; TODO: use some looping here!
     (loop [read-len 0]
       (if (= read-len len)
-        (new String ba)
+        (new String ba UTF-8)
         (recur (+ read-len (.read is ba read-len (- len read-len))))))))
 
 
