@@ -23,3 +23,9 @@
 (jar-classes example-jar)
 
 (def entry-0 (first (filter #(.contains (.getName ^JarEntry %) "ByteOrderParser") (jar-entries example-jar))))
+
+
+(defn- true-keys [m] (set (filter m (keys m))))
+
+;; super public
+(assert (= #{:super :public} (true-keys (parse-access-flags 0x0021))))

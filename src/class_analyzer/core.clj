@@ -117,8 +117,8 @@
 ;; TODO: ez nem jo!!!
 (defn parse-access-flags [n]
   {:public    (bit-test n 0)
-   :final     (bit-test n 3)
-   :super     (bit-test n 4) ;; Not final, can be extended
+   :final     (bit-test n 4)
+   :super     (bit-test n 5) ;; Not final, can be extended
    :interface (bit-test n 9)
    :abstract  (bit-test n 10)
    :synthetic (bit-test n 12) ;; generated
