@@ -128,11 +128,12 @@
         :value attr}))))
 
 
+;; TODO: ez nem jo!!!
 (defn parse-access-flags [n]
   {:public    (bit-test n 0)
    :final     (bit-test n 3)
    :super     (bit-test n 4) ;; Not final, can be extended
-   :interface (bit-test n 9 )
+   :interface (bit-test n 9)
    :abstract  (bit-test n 10)
    :synthetic (bit-test n 12) ;; generated
    :annotation (bit-test n 13)
@@ -152,6 +153,18 @@
         :descr  (-> descr-idx constant-pool :data)
         :attrs  attrs}))))
 
+(defn read-fields [^java.io.DataInputStream ois constant-pool]
+  (let [fields-cnt (.readUnsignedShort ois)]
+    (doall
+     (for [i (range fields-cnt)
+           :let [access-flags (-> ois .readUnsignedShort parse-access-flags)
+                 name         (-> ois .readUnsignedShort constant-pool :data)
+                 descr        (-> ois .readUnsignedShort constant-pool :data)
+                 attributes   (read-attributes ois constant-pool)]]
+       {:name   name
+        :access access-flags
+        :descr  descr
+        :attributes attributes}))))
 
 (defn- read-interfaces [^DataInputStream ois constant-pool]
    (let [iface-cnt (.readUnsignedShort ois)]
@@ -177,18 +190,15 @@
           class         (-> ois .readUnsignedShort pool :data str!)
           super-class   (-> ois .readUnsignedShort pool :data str!)
           interfaces    (read-interfaces ois pool)
-
-          nr-fields (.readUnsignedShort ois)
-          _         (assert (zero? nr-fields))
-          ;; TODO - implement field reading here!
-
-          methods (read-methods ois pool)
-          attrs   (read-attributes ois pool)]
+          fields        (read-fields ois pool)
+          methods       (read-methods ois pool)
+          attrs         (read-attributes ois pool)]
       {:version {:minor minor :major major}
        :class       class
        :super-class super-class
        :interfaces  interfaces
        :attributes  attrs
+       :fields      fields
        :methods     methods
        :access      (parse-access-flags access-flags)
        :constants   pool})))
@@ -203,9 +213,9 @@
   (doseq [i (range 10000)
           :let [entry (.getNextEntry zis)]
           :while (some? entry)
-          :when (.contains (.getName entry) "IPersistentM")
+          :when (.contains (.getName entry) "PersistentHa")
           ]
-    (clojure.pprint/pprint (read-entry zis))))
+    (time (read-entry zis))))
 
 (jar-classes example-jar)
 
