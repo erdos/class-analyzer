@@ -89,9 +89,6 @@
    pool pool))
 
 
-(def read-attribute nil)
-
-
 (defmulti read-attribute (fn [input-stream name length constant-pool] name))
 
 
@@ -114,14 +111,13 @@
       :value attr})))
 
 
-;; TODO: ez nem jo!!!
 (defn parse-access-flags [n]
-  {:public    (bit-test n 0)
-   :final     (bit-test n 4)
-   :super     (bit-test n 5) ;; Not final, can be extended
-   :interface (bit-test n 9)
-   :abstract  (bit-test n 10)
-   :synthetic (bit-test n 12) ;; generated
+  {:public     (bit-test n 0)
+   :final      (bit-test n 4)
+   :super      (bit-test n 5) ;; Not final, can be extended
+   :interface  (bit-test n 9)
+   :abstract   (bit-test n 10)
+   :synthetic  (bit-test n 12) ;; generated
    :annotation (bit-test n 13)
    :enum       (bit-test n 14)})
 
