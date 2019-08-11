@@ -118,14 +118,13 @@
 
 
 (defn read-attributes [^java.io.DataInputStream ois constant-pool]
-  (let [attr-cnt (.readUnsignedShort ois)]
-    (doall
-     (for [i (range attr-cnt)
-           :let [attr-name (-> ois .readUnsignedShort constant-pool :data #_str!)
-                 attr-len (.readInt ois)
-                 attr     (read-attribute ois attr-name attr-len constant-pool)]]
-       {:name  attr-name
-        :value attr}))))
+  (doall
+   (for [i (range (.readUnsignedShort ois))
+         :let [attr-name (-> ois .readUnsignedShort constant-pool :data #_str!)
+               attr-len (.readInt ois)
+               attr     (read-attribute ois attr-name attr-len constant-pool)]]
+     {:name  attr-name
+      :value attr})))
 
 
 ;; TODO: ez nem jo!!!
@@ -141,37 +140,34 @@
 
 
 (defn- read-methods [^java.io.DataInputStream ois constant-pool]
-  (let [method-cnt (.readUnsignedShort ois)]
-    (doall
-     (for [i (range method-cnt)
-           :let [access-flags (.readUnsignedShort ois)
-                 name-idx     (.readUnsignedShort ois)
-                 descr-idx    (.readUnsignedShort ois)
-                 attrs        (read-attributes ois constant-pool)]]
-       {:access (parse-access-flags access-flags)
-        :name   (-> name-idx constant-pool :data)
-        :descr  (-> descr-idx constant-pool :data)
-        :attrs  attrs}))))
+  (doall
+   (for [i (range (.readUnsignedShort ois))
+         :let [access-flags (.readUnsignedShort ois)
+               name-idx     (.readUnsignedShort ois)
+               descr-idx    (.readUnsignedShort ois)
+               attrs        (read-attributes ois constant-pool)]]
+     {:access (parse-access-flags access-flags)
+      :name   (-> name-idx constant-pool :data)
+      :descr  (-> descr-idx constant-pool :data)
+      :attrs  attrs})))
 
 (defn read-fields [^java.io.DataInputStream ois constant-pool]
-  (let [fields-cnt (.readUnsignedShort ois)]
-    (doall
-     (for [i (range fields-cnt)
-           :let [access-flags (-> ois .readUnsignedShort parse-access-flags)
-                 name         (-> ois .readUnsignedShort constant-pool :data)
-                 descr        (-> ois .readUnsignedShort constant-pool :data)
-                 attributes   (read-attributes ois constant-pool)]]
-       {:name   name
-        :access access-flags
-        :descr  descr
-        :attributes attributes}))))
+  (doall
+   (for [i (range (.readUnsignedShort ois))
+         :let [access-flags (-> ois .readUnsignedShort parse-access-flags)
+               name         (-> ois .readUnsignedShort constant-pool :data)
+               descr        (-> ois .readUnsignedShort constant-pool :data)
+               attributes   (read-attributes ois constant-pool)]]
+     {:name   name
+      :access access-flags
+      :descr  descr
+      :attributes attributes})))
 
 (defn- read-interfaces [^DataInputStream ois constant-pool]
-   (let [iface-cnt (.readUnsignedShort ois)]
-     (doall
-      (for [i (range iface-cnt)
-            :let [class-idx (.readUnsignedShort ois)]]
-        (-> class-idx constant-pool :data)))))
+  (doall
+   (for [i (range (.readUnsignedShort ois))
+         :let [class-idx (.readUnsignedShort ois)]]
+     (-> class-idx constant-pool :data))))
 
 
 (defn- read-entry [zis]
