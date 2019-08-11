@@ -46,7 +46,6 @@
     7  [:class 3 (.readUnsignedShort ois)] ;; tag + name idx
     9  [:fieldref 5 [(.readUnsignedShort ois) (.readUnsignedShort ois)]] ;; tag + classidx + nameandtype idx
     10 [:methodref 5 [(.readUnsignedShort ois) (.readUnsignedShort ois)]] ;; tag + class idx + nameandtype idx
-    ; 11 [:interfacemethodref 0]
     8  [:string 3 (.readUnsignedShort ois)]
 
     3  [:integer (.readInt ois)] ;; int, short, char, byte, boolean
@@ -58,6 +57,8 @@
 
     1  (let [length (.readUnsignedShort ois)]
          [:utf8 (+ 3 length) (read-str ois length)])
+
+    11 [:interfacemethodred 5 [(.readUnsignedShort ois) (.readUnsignedShort ois)]] ;; tag + class idx + nameandtypeidx
 
     15 [:methodhandle [(.readUnsignedByte ois) (.readUnsignedShort ois)]]
     16 [:methodtype (.readUnsignedShort ois)]
@@ -93,7 +94,7 @@
   (reduce-kv
    (fn [acc k v]
      (case (:discriminator v)
-       (:fieldref :methodref)
+       (:fieldref :methodref :interfacemethodred)
        (update acc k merge {:class (-> v :data first acc :data str!)
                             :name  (-> v :data second acc :name str!)
                             :type (-> v :data second acc :type str!)})
@@ -138,7 +139,7 @@
    :enum       (bit-test n 14)})
 
 
-(defn read-methods [^java.io.DataInputStream ois constant-pool]
+(defn- read-methods [^java.io.DataInputStream ois constant-pool]
   (let [method-cnt (.readUnsignedShort ois)]
     (doall
      (for [i (range method-cnt)
@@ -152,6 +153,14 @@
         :attrs  attrs}))))
 
 
+(defn- read-interfaces [^DataInputStream ois constant-pool]
+   (let [iface-cnt (.readUnsignedShort ois)]
+     (doall
+      (for [i (range iface-cnt)
+            :let [class-idx (.readUnsignedShort ois)]]
+        (-> class-idx constant-pool :data)))))
+
+
 (defn- read-entry [zis]
   (let [ois (new java.io.DataInputStream zis)
         read-int (fn [] (.readUnsignedShort ois))
@@ -162,38 +171,40 @@
     (assert (= 47806 (.readUnsignedShort ois))) ;; BA BE
 
     (let [[minor major] [(read-int) (read-int)]
-          _ (println "Minor: " minor " Major: " major)
 
-          pool (-> ois constant-pool cp-enhance-1 cp-enhance-2)
-          access-flags (.readUnsignedShort ois)
-          class       (-> ois .readUnsignedShort pool :data str!)
-          super-class (-> ois .readUnsignedShort pool :data str!)
-          nr-interfaces (.readUnsignedShort ois)
-           _ (assert (zero? nr-interfaces))
-          ;; TODO - implement iface reading here!!!
+          pool          (-> ois constant-pool cp-enhance-1 cp-enhance-2)
+          access-flags  (.readUnsignedShort ois)
+          class         (-> ois .readUnsignedShort pool :data str!)
+          super-class   (-> ois .readUnsignedShort pool :data str!)
+          interfaces    (read-interfaces ois pool)
 
           nr-fields (.readUnsignedShort ois)
-          _ (assert (zero? nr-fields))
+          _         (assert (zero? nr-fields))
           ;; TODO - implement field reading here!
 
           methods (read-methods ois pool)
-          attrs   (read-attributes ois pool)
-          ]
-      {:class       class
+          attrs   (read-attributes ois pool)]
+      {:version {:minor minor :major major}
+       :class       class
        :super-class super-class
+       :interfaces  interfaces
        :attributes  attrs
        :methods     methods
        :access      (parse-access-flags access-flags)
        :constants   pool})))
 
 
-(def example-jar "/home/erdos/.m2/repository/commons-io/commons-io/2.6/commons-io-2.6.jar")
+                                        ; (def example-jar "/home/erdos/.m2/repository/commons-io/commons-io/2.6/commons-io-2.6.jar")
+(def example-jar "/home/erdos/.m2/repository/org/clojure/clojure/1.10.1/clojure-1.10.1.jar")
+
+
 (with-open [fis (new java.io.FileInputStream (file example-jar))
             zis (new java.util.zip.ZipInputStream fis)]
-  (doseq [i (range 1000)
+  (doseq [i (range 10000)
           :let [entry (.getNextEntry zis)]
           :while (some? entry)
-          :when (.contains (.getName entry) "ByteOrderParser")]
+          :when (.contains (.getName entry) "IPersistentM")
+          ]
     (clojure.pprint/pprint (read-entry zis))))
 
 (jar-classes example-jar)
