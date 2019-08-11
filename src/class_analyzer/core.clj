@@ -50,8 +50,11 @@
 
     3  [:integer (.readInt ois)] ;; int, short, char, byte, boolean
     4  [:float   (.readFloat ois)]
+
+    ;; special - 8 byte
     5  [:long (.readLong ois)]
     6  [:double (.readDouble ois)]
+
     12 [:nameandtype 5 [(.readUnsignedShort ois)
                         (.readUnsignedShort ois)]] ;; tag nameidx descriptoridx
 
@@ -63,8 +66,8 @@
     15 [:methodhandle [(.readUnsignedByte ois) (.readUnsignedShort ois)]]
     16 [:methodtype (.readUnsignedShort ois)]
 
-    ;; TODO!!!
-    ;;18 [:invokedynamic 0]
+    ;; bootstrap_method_attr_index + name_and_type_idx
+    18 [:invokedynamic [(.readUnsignedShort ois) (.readUnsignedShort ois)]]
     ))
 
 
@@ -73,8 +76,9 @@
     (loop [acc (sorted-map)
            i 1]
       (if (< i cp-size)
-        (let [[disc size content] (constant-pool-record ois)]
-          (recur (assoc acc i {:discriminator disc, :data content}) (inc i)))
+        (let [[disc size content] (constant-pool-record ois)
+              delta (if (#{:long :double} disc) 2 1)]
+          (recur (assoc acc i {:discriminator disc, :data content}) (+ i delta)))
         acc))))
 
 
@@ -171,15 +175,13 @@
 
 
 (defn- read-entry [zis]
-  (let [ois (new java.io.DataInputStream zis)
-        read-int (fn [] (.readUnsignedShort ois))
-        read-str (partial read-str ois)]
+  (let [ois (new java.io.DataInputStream zis)]
 
     ;; magic number
     (assert (= 51966 (.readUnsignedShort ois))) ;; CA FE
     (assert (= 47806 (.readUnsignedShort ois))) ;; BA BE
 
-    (let [[minor major] [(read-int) (read-int)]
+    (let [[minor major] [(.readUnsignedShort ois) (.readUnsignedShort ois)]
 
           pool          (-> ois constant-pool cp-enhance-1 cp-enhance-2)
           access-flags  (.readUnsignedShort ois)
@@ -206,12 +208,15 @@
 
 (with-open [fis (new java.io.FileInputStream (file example-jar))
             zis (new java.util.zip.ZipInputStream fis)]
-  (doseq [i (range 10000)
-          :let [entry (.getNextEntry zis)]
-          :while (some? entry)
-          :when (.contains (.getName entry) "PersistentHa")
-          ]
-    (time (read-entry zis))))
+  (time
+   (doseq [i (range 10000)
+           :let [entry (.getNextEntry zis)]
+           :while (some? entry)
+           :when (.endsWith (.getName entry) ".class")
+           :when (.contains (.getName entry) "")
+           ]
+     ; (println "Entry: " entry)
+     (read-entry zis))))
 
 (jar-classes example-jar)
 
