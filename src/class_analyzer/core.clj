@@ -123,7 +123,8 @@
    :abstract   (bit-test n 10)
    :synthetic  (bit-test n 12) ;; generated
    :annotation (bit-test n 13)
-   :enum       (bit-test n 14)})
+   :enum       (bit-test n 14)
+   :module     (bit-test n 15)})
 
 
 (defn- read-methods [^java.io.DataInputStream ois constant-pool]
