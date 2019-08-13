@@ -26,10 +26,10 @@
 
 (defn- constant-pool-record [^DataInputStream ois]
   (case (.readUnsignedByte ois)
-    7  [:class 3 (.readUnsignedShort ois)] ;; tag + name idx
-    9  [:fieldref 5 [(.readUnsignedShort ois) (.readUnsignedShort ois)]] ;; tag + classidx + nameandtype idx
-    10 [:methodref 5 [(.readUnsignedShort ois) (.readUnsignedShort ois)]] ;; tag + class idx + nameandtype idx
-    8  [:string 3 (.readUnsignedShort ois)]
+    7  [:class (.readUnsignedShort ois)] ;; tag + name idx
+    9  [:fieldref [(.readUnsignedShort ois) (.readUnsignedShort ois)]] ;; tag + classidx + nameandtype idx
+    10 [:methodref [(.readUnsignedShort ois) (.readUnsignedShort ois)]] ;; tag + class idx + nameandtype idx
+    8  [:string (.readUnsignedShort ois)]
 
     3  [:integer (.readInt ois)] ;; int, short, char, byte, boolean
     4  [:float   (.readFloat ois)]
@@ -38,19 +38,23 @@
     5  [:long (.readLong ois)]
     6  [:double (.readDouble ois)]
 
-    12 [:nameandtype 5 [(.readUnsignedShort ois)
-                        (.readUnsignedShort ois)]] ;; tag nameidx descriptoridx
+    12 [:nameandtype [(.readUnsignedShort ois)
+                      (.readUnsignedShort ois)]] ;; tag nameidx descriptoridx
 
     1  (let [length (.readUnsignedShort ois)]
-         [:utf8 (+ 3 length) (stream->str ois length)])
+         [:utf8 (stream->str ois length)])
 
-    11 [:interfacemethodred 5 [(.readUnsignedShort ois) (.readUnsignedShort ois)]] ;; tag + class idx + nameandtypeidx
+    11 [:interfacemethodref [(.readUnsignedShort ois) (.readUnsignedShort ois)]] ;; tag + class idx + nameandtypeidx
 
     15 [:methodhandle [(.readUnsignedByte ois) (.readUnsignedShort ois)]]
     16 [:methodtype (.readUnsignedShort ois)]
 
     ;; bootstrap_method_attr_index + name_and_type_idx
     18 [:invokedynamic [(.readUnsignedShort ois) (.readUnsignedShort ois)]]
+
+    19 [:module (.readUnsignedShort ois)]
+
+    20 [:package (.readUnsignedShort ois)]
     ))
 
 
@@ -59,7 +63,7 @@
     (loop [acc (sorted-map)
            i 1]
       (if (< i cp-size)
-        (let [[disc size content] (constant-pool-record ois)
+        (let [[disc content] (constant-pool-record ois)
               delta (if (#{:long :double} disc) 2 1)]
           (recur (assoc acc i {:discriminator disc, :data content}) (+ i delta)))
         acc))))
@@ -69,7 +73,7 @@
   (reduce-kv
    (fn [acc k v]
      (case (:discriminator v)
-       (:class :string) (update-in acc [k :data] (comp :data acc))
+       (:class :string :module :package) (update-in acc [k :data] (comp :data acc))
 
        :nameandtype (update acc k merge {:name (-> v :data first acc :data str!)
                                          :type (-> v :data second acc :data str!)})
@@ -165,7 +169,7 @@
           pool          (-> ois constant-pool cp-enhance-1 cp-enhance-2)
           access-flags  (.readUnsignedShort ois)
           class         (-> ois .readUnsignedShort pool :data str!)
-          super-class   (-> ois .readUnsignedShort pool :data str!)
+          super-class   (-> ois .readUnsignedShort pool :data (or "java.lang.Object"))
           interfaces    (read-interfaces ois pool)
           fields        (read-fields ois pool)
           methods       (read-methods ois pool)
