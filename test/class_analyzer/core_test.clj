@@ -18,7 +18,8 @@
            ; :when (.contains (.getName entry) "")
            ]
      #_(println "Entry: " entry)
-     (read-entry zis))))
+     (clojure.pprint/pprint (read-entry zis))
+     (throw (ex-info "a " {})))))
 
 (jar-classes example-jar)
 

@@ -115,8 +115,10 @@
          :let [attr-name (-> ois .readUnsignedShort constant-pool :data str!)
                attr-len (.readInt ois)
                attr     (read-attribute ois attr-name attr-len constant-pool)]]
-     {:name  attr-name
-      :value attr})))
+     (if (string? attr)
+       {:name  attr-name
+        :value attr}
+       (merge {:name attr-name} attr)))))
 
 
 (defn parse-access-flags [n]
