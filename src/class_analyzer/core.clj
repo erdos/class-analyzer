@@ -105,6 +105,10 @@
   (-> dis .readUnsignedShort constant-pool :data))
 
 
+(defmethod read-attribute "Signature" [^java.io.DataInputStream dis _ _ constant-pool]
+  (-> dis .readUnsignedShort constant-pool :data))
+
+
 (defn read-attributes [^java.io.DataInputStream ois constant-pool]
   (doall
    (for [i (range (.readUnsignedShort ois))
@@ -158,8 +162,8 @@
      (-> class-idx constant-pool :data str!))))
 
 
-(defn read-entry [zis]
-  (let [ois (new java.io.DataInputStream zis)]
+(defn read-class [input-stream]
+  (let [ois (new java.io.DataInputStream input-stream)]
 
     ;; magic number
     (assert (= 51966 (.readUnsignedShort ois))) ;; CA FE
