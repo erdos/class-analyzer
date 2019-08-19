@@ -7,7 +7,7 @@
                                         ; (def example-jar "/home/erdos/.m2/repository/commons-io/commons-io/2.6/commons-io-2.6.jar")
 (def example-jar "/home/erdos/.m2/repository/org/clojure/clojure/1.10.1/clojure-1.10.1.jar")
 
-
+#_
 (with-open [fis (new java.io.FileInputStream (file example-jar))
             zis (new java.util.zip.ZipInputStream fis)]
   (time
@@ -20,13 +20,14 @@
      #_(println "Entry: " entry)
      (clojure.pprint/pprint (read-entry zis))
      (throw (ex-info "a " {})))))
-
+#_
 (jar-classes example-jar)
 
+#_
 (def entry-0 (first (filter #(.contains (.getName ^JarEntry %) "ByteOrderParser") (jar-entries example-jar))))
 
-
+#_
 (defn- true-keys [m] (set (filter m (keys m))))
-
+#_
 ;; super public
 (assert (= #{:super :public} (true-keys (parse-access-flags 0x0021))))

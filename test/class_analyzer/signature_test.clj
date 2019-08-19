@@ -8,18 +8,13 @@
           :when (and (var? v) (= target (.ns v)))]
     (eval `(defn ~(symbol (str "-" k)) [~'& args#] (apply (deref ~v) args#)))))
 
-(defn- str-pbr [s] (PushbackReader. (StringReader. (str s))))
-
-
-
-
 
 (deftest test-identifier
   (testing "Positive"
-    (is (= "asdf1" (identifier (str-pbr "asdf1;xx")))))
+    (is (= "asdf1" (with-str "asdf1;xx" (identifier)))))
   (testing "Not found"
-    (is (= nil (identifier (str-pbr ";xx"))))
-    (is (= nil (identifier (str-pbr " asdf")))))
+    (is (= nil (with-str ";xx" (identifier))))
+    (is (= nil (with-str " asdf" (identifier)))))
   (testing "Reset on error")
 
   (testing "Error on EOF"
@@ -27,44 +22,48 @@
     ))
 
 (deftest test-expect
-  (let [r (str-pbr "abc")]
-    (is (nil? (-expect r \X)))
-    (is (-expect r \a))
-    (is (nil? (-expect r \B)))
-    (is (-expect r \b))
-    (is (-expect r \c))
-    (is (nil? (-expect r \d)))))
+  (with-str "abc"
+    (is (nil? (-expect \X)))
+    (is (-expect \a))
+    (is (nil? (-expect \B)))
+    (is (-expect \b))
+    (is (-expect \c))
+    (is (nil? (-expect \d)))))
 
 (deftest test-either
-  (let [r (str-pbr "bc")]
-    (is (= \b (-either r #(-expect % \a) #(-expect % \b))))
-    (is (= nil (-either r #(-expect % \a))))
-    (is (= \c (-either r #(-expect % \c))))
-    (is (= nil (-either r #(-expect % \a))))))
+  (with-str "bc"
+    (is (= \b (-either #(-expect \a) #(-expect \b))))
+    (is (= nil (-either #(-expect \a))))
+    (is (= \c (-either #(-expect \c))))
+    (is (= nil (-either #(-expect \a))))))
 
 (deftest test-separated-tokens-1
   (testing "Read 1 item"
-    (let [r (str-pbr "a!")]
+    (with-str "a!"
       (is (= [\a]
-             (-separated-tokens-1 r \, #(-expect % \a))))
-      (is (= \! (char (.read r))))))
+             (-separated-tokens-1 \, #(-expect \a))))
+      (is (= \! (char (.read *reader*))))))
   (testing "Read 4 items in a row"
-    (is (= ["a" "b" "c"] (-separated-tokens-1 (str-pbr "a.b.c") \. identifier))))
+    (with-str "a.b.c"
+      (is (= ["a" "b" "c"] (-separated-tokens-1 \. identifier)))))
   (testing "Could not read so reader is reverted"
-    (let [r (str-pbr "xyz")]
-      (is (= nil (-separated-tokens-1 r \, #(-expect % \a))))
-      (is (= \x (char (.read r)))))))
+    (with-str "xyz"
+      (is (= nil (-separated-tokens-1 \, #(-expect \a))))
+      (is (= \x (char (.read *reader*)))))))
 
 (deftest test-class-type-signature
   (testing "Simple class"
     (is (= {:package "java.lang"
             :class "Object"}
-           (-class-type-signature (str-pbr "Ljava/lang/Object;")))))
+           (with-str "Ljava/lang/Object;"
+             (-class-type-signature)))))
 
   (testing "Inner class"
-    (-class-type-signature (str-pbr "Ljava/util/List.Entry;")))
+    (with-str "Ljava/util/List.Entry;"
+      (-class-type-signature)))
   (testing "Generic class"
-    (-class-type-signature (str-pbr "Ljava/util/List<TT;>;"))))
+    (with-str "Ljava/util/List<TT;>;"
+      (-class-type-signature))))
 
 
 ; (-class-signature (str-pbr "<T:Ljava/lang/Object;>Ljava/util/List<TT;>;"))
