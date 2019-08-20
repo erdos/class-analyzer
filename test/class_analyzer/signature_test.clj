@@ -3,6 +3,8 @@
             [clojure.test :refer [deftest testing is are]])
     (:import [java.io Reader BufferedReader StringReader PushbackReader]))
 
+
+;; import private vars from tested namespace
 (let [target (the-ns 'class-analyzer.signature)]
   (doseq [[k v] (ns-map target)
           :when (and (var? v) (= target (.ns v)))]
@@ -21,6 +23,7 @@
 
     ))
 
+
 (deftest test-expect
   (with-str "abc"
     (is (nil? (-expect \X)))
@@ -30,12 +33,14 @@
     (is (-expect \c))
     (is (nil? (-expect \d)))))
 
+
 (deftest test-either
   (with-str "bc"
     (is (= \b (-either #(-expect \a) #(-expect \b))))
     (is (= nil (-either #(-expect \a))))
     (is (= \c (-either #(-expect \c))))
     (is (= nil (-either #(-expect \a))))))
+
 
 (deftest test-separated-tokens-1
   (testing "Read 1 item"
@@ -50,6 +55,7 @@
     (with-str "xyz"
       (is (= nil (-separated-tokens-1 \, #(-expect \a))))
       (is (= \x (char (.read *reader*)))))))
+
 
 (deftest test-class-type-signature
   (testing "Simple class"
@@ -66,4 +72,29 @@
       (-class-type-signature))))
 
 
-; (-class-signature (str-pbr "<T:Ljava/lang/Object;>Ljava/util/List<TT;>;"))
+(deftest test-type-signature
+  (with-str "Ljava/lang/reflect/Constructor<*>;"
+    (is (= {:package "java.lang.reflect", :class "Constructor", :generic [\*]}
+           (-type-signature)))))
+
+
+(deftest test-method-type-signature
+  (with-str "(Ljava/lang/reflect/Constructor<*>;)Lclojure/asm/commons/Method;"
+    (is (= {:type-params nil
+            :args [{:package "java.lang.reflect", :class "Constructor", :generic [\*]}]
+            :return {:package "clojure.asm.commons", :class "Method"}, :throws []}
+           (method-type-signature)))))
+
+
+(deftest test-class-signature
+  ; (-class-signature (str-pbr "<T:Ljava/lang/Object;>Ljava/util/List<TT;>;"))
+  (is (=
+       {:formal-type-parameters [{:identifier "T"
+                                  :classbound {:package "java.lang", :class "Object"}
+                                  :interfacebound []}]
+        :superclass {:package "java.lang", :class "Object"}
+        :superinterface [{:package "java.lang"
+                          :class "Iterable"
+                          :generic [{:indicator nil, :field-type-signature "T"}]}]}
+       (with-str "<T:Ljava/lang/Object;>Ljava/lang/Object;Ljava/lang/Iterable<TT;>;"
+         (class-signature)))))

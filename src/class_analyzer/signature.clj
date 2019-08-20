@@ -117,7 +117,7 @@
 (defn- type-variable-signature []
   (wrapped \T identifier \;))
 
-(defn- field-type-signature []
+(defn field-type-signature []
   (either class-type-signature array-type-signature type-variable-signature))
 
 (defn- type-signature [] (either field-type-signature base-type))
@@ -170,6 +170,30 @@
          :superinterface is})
       (if fts (assert false)))))
 
+;; VoidDescriptor: V
+(defn- void-descriptor [] (expect \V))
 
-(with-str "<T:Ljava/lang/Object;>Ljava/lang/Object;Ljava/lang/Iterable<TT;>;"
-  (class-signature))
+;; ReturnType: TypeSignature OR VoidDescriptor
+(defn- return-type [] (either type-signature void-descriptor))
+
+;; ThrowsSignature: ^ ClassTypeSignature     OR   ^ TypeVariableSignature
+(defn- throws-signature []
+  (when (expect \^)
+    (doto (either class-type-signature type-variable-signature)
+      (assert))))
+
+;; MethodTypeSignature: FormalTypeParametersopt (TypeSignature*) ReturnType ThrowsSignature*
+(defn method-type-signature []
+  (let [fts (formal-type-parameters)]
+    (if-not (expect \()
+      (assert (nil? fts))
+
+      (let [ts (repeat* type-signature)]
+        (expect! \))
+        (let [rs (return-type)
+              ths (repeat* throws-signature)]
+          (assert rs)
+          {:type-params fts
+           :args   (vec ts)
+           :return rs
+           :throws ths})))))

@@ -1,6 +1,7 @@
 (ns class-analyzer.core
   (:import [java.io DataInputStream])
-  (:require [clojure.java.io :as io :refer [file]]))
+  (:require [clojure.java.io :as io :refer [file]]
+            [class-analyzer.signature :as signature]))
 
 
 (set! *warn-on-reflection* true)
@@ -93,32 +94,38 @@
    pool pool))
 
 
-(defmulti read-attribute (fn [input-stream name length constant-pool] name))
+(def read-attribute nil)
+(defmulti read-attribute (fn [discrinimator input-stream name length constant-pool] name))
 
 
-(defmethod read-attribute :default [^DataInputStream dis _ cnt _]
+(defmethod read-attribute :default [_ ^DataInputStream dis _ cnt _]
   (dotimes [_ cnt] (.readByte dis))
   :not-parsed)
 
 
-(defmethod read-attribute "SourceFile" [^java.io.DataInputStream dis _ _ constant-pool]
+(defmethod read-attribute "SourceFile" [_ ^java.io.DataInputStream dis _ _ constant-pool]
   (-> dis .readUnsignedShort constant-pool :data))
 
 
-(defmethod read-attribute "Signature" [^java.io.DataInputStream dis _ _ constant-pool]
-  (-> dis .readUnsignedShort constant-pool :data))
+(defmethod read-attribute "Signature" [d ^java.io.DataInputStream dis _ _ constant-pool]
+  (signature/with-str (-> dis .readUnsignedShort constant-pool :data)
+    (case d
+      :method (signature/method-type-signature)
+      :field (signature/field-type-signature)
+      :class (signature/class-signature))
+    ))
 
 
-(defn read-attributes [^java.io.DataInputStream ois constant-pool]
+(defn read-attributes [discriminator ^java.io.DataInputStream ois constant-pool]
   (doall
    (for [i (range (.readUnsignedShort ois))
          :let [attr-name (-> ois .readUnsignedShort constant-pool :data str!)
                attr-len (.readInt ois)
-               attr     (read-attribute ois attr-name attr-len constant-pool)]]
-     (if (string? attr)
+               attr     (read-attribute discriminator ois attr-name attr-len constant-pool)]]
+     (if (map? attr)
+       (merge {:name attr-name} attr)
        {:name  attr-name
-        :value attr}
-       (merge {:name attr-name} attr)))))
+        :value attr}))))
 
 
 (defn parse-access-flags [n]
@@ -139,7 +146,7 @@
          :let [access-flags (.readUnsignedShort ois)
                name-idx     (.readUnsignedShort ois)
                descr-idx    (.readUnsignedShort ois)
-               attrs        (read-attributes ois constant-pool)]]
+               attrs        (read-attributes :method ois constant-pool)]]
      {:access (parse-access-flags access-flags)
       :name   (-> name-idx constant-pool :data str!)
       :descr  (-> descr-idx constant-pool :data str!)
@@ -151,7 +158,7 @@
          :let [access-flags (-> ois .readUnsignedShort parse-access-flags)
                name         (-> ois .readUnsignedShort constant-pool :data str!)
                descr        (-> ois .readUnsignedShort constant-pool :data str!)
-               attributes   (read-attributes ois constant-pool)]]
+               attributes   (read-attributes :field ois constant-pool)]]
      {:name   name
       :access access-flags
       :descr  descr
@@ -180,7 +187,7 @@
           interfaces    (read-interfaces ois pool)
           fields        (read-fields ois pool)
           methods       (read-methods ois pool)
-          attrs         (read-attributes ois pool)]
+          attrs         (read-attributes :class ois pool)]
       {:version {:minor minor :major major}
        :class       class
        :super-class super-class

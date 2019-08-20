@@ -17,9 +17,11 @@
            :when (.endsWith (.getName entry) ".class")
            ; :when (.contains (.getName entry) "")
            ]
-     #_(println "Entry: " entry)
-     (clojure.pprint/pprint (read-entry zis))
-     (throw (ex-info "a " {})))))
+     (println "Entry: " entry)
+     (-> (read-class zis)
+         ; clojure.pprint/pprint
+         )
+     #_(throw (ex-info "a " {})))))
 #_
 (jar-classes example-jar)
 
