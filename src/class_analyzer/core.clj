@@ -108,13 +108,13 @@
 
 
 (defmethod read-attribute "Signature" [d ^java.io.DataInputStream dis _ _ constant-pool]
-  (signature/with-str (-> dis .readUnsignedShort constant-pool :data)
-    (case d
-      :method (signature/method-type-signature)
-      :field (signature/field-type-signature)
-      :class (signature/class-signature))
-    ))
-
+  (let [source (-> dis .readUnsignedShort constant-pool :data)]
+    (signature/with-str source
+      (-> (case d
+            :method (signature/method-type-signature)
+            :field (signature/field-type-signature)
+            :class (signature/class-signature))
+          (or (throw (ex-info "Could not parse signature!" {:discriminator d, :signature source})))))))
 
 (defn read-attributes [discriminator ^java.io.DataInputStream ois constant-pool]
   (doall
