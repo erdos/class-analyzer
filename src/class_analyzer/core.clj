@@ -130,8 +130,13 @@
 
 (defn parse-access-flags [n]
   {:public     (bit-test n 0)
+   :private    (bit-test n 1)
+   :protected  (bit-test n 2)
+   :static     (bit-test n 3)
    :final      (bit-test n 4)
    :super      (bit-test n 5) ;; Not final, can be extended
+   :volatile   (bit-test n 6)
+   :transient  (bit-test n 7)
    :interface  (bit-test n 9)
    :abstract   (bit-test n 10)
    :synthetic  (bit-test n 12) ;; generated

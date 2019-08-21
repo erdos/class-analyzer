@@ -35,7 +35,7 @@
                 (clojure.string/join ", " (map signature/render-type (:args (:descr m))))
                 ");")))
 
-(let [obj (j/zip-open-file example-jar "clojure/lang/Ratio.class" c/read-class)]
+(let [obj (j/zip-open-file example-jar "clojure/lang/Util.class" c/read-class)]
   (run! print (render-accessors (:access obj)))
 
   (print " class" (:class obj))
