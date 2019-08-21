@@ -22,3 +22,21 @@
         (.replace "/" ".")
         ; (.replace "$" ".")
         )))
+
+
+(defn zip-open [input-file]
+  (let [fis (new java.io.FileInputStream (file input-file))
+        zis (new java.util.zip.ZipInputStream fis)]
+    [zis
+     (for [i (range)
+           :let [entry (.getNextEntry zis)]
+           :while (some? entry)
+           :when (.endsWith (.getName entry) ".class")
+           ]
+       (.getName entry)
+       )]))
+
+(defn zip-open-file [input-file class-name reader-fn]
+  (let [[zis fs] (zip-open input-file)]
+    (with-open [zis zis]
+      (first (for [f fs :when (= f class-name)] (reader-fn zis))))))

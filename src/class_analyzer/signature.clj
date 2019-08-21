@@ -171,7 +171,7 @@
       (if fts (assert false)))))
 
 ;; VoidDescriptor: V
-(defn- void-descriptor [] (expect \V))
+(defn- void-descriptor [] (and (expect \V) :void))
 
 ;; ReturnType: TypeSignature OR VoidDescriptor
 (defn- return-type [] (either type-signature void-descriptor))
@@ -197,3 +197,8 @@
            :args   (vec ts)
            :return rs
            :throws ths})))))
+
+(defn render-type [t]
+  (if (keyword? t)
+    (name t)
+    (str (:package t) "." (:class t))))

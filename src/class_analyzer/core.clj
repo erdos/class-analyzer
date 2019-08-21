@@ -149,7 +149,7 @@
                attrs        (read-attributes :method ois constant-pool)]]
      {:access (parse-access-flags access-flags)
       :name   (-> name-idx constant-pool :data str!)
-      :descr  (-> descr-idx constant-pool :data str!)
+      :descr  (-> descr-idx constant-pool :data str! (signature/with-str (signature/method-type-signature)))
       :attrs  attrs})))
 
 (defn read-fields [^java.io.DataInputStream ois constant-pool]
@@ -161,7 +161,7 @@
                attributes   (read-attributes :field ois constant-pool)]]
      {:name   name
       :access access-flags
-      :descr  descr
+      :descr  (signature/with-str descr (signature/field-type-signature))
       :attributes attributes})))
 
 (defn- read-interfaces [^DataInputStream ois constant-pool]
