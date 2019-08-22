@@ -28,6 +28,8 @@
 
 (defn- print-method [obj m]
   (apply print \space (render-accessors (:access m)))
+
+  ;; TODO: also <clinit> !!!
   (if (= "<init>" (:name m))
     (print (str \space (:class obj)))
     (print (str \space (-> m :descr :return signature/render-type) \space (:name m))))

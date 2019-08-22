@@ -127,23 +127,45 @@
        {:name  attr-name
         :value attr}))))
 
+;; https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.1-200-E.1
+(defn parse-class-flags [n]
+  {:public     (bit-test n 0)
+   :private    (bit-test n 1) ;; nested class
+   :protected  (bit-test n 2) ;; nested class
+   :static     (bit-test n 3) ;; nested class
+   :final      (bit-test n 4)
+   :super      (bit-test n 5)
+   :interface  (bit-test n 9)
+   :abstract   (bit-test n 10)
+   :synthetic  (bit-test n 12)
+   :annotation (bit-test n 13)
+   :enum       (bit-test n 14)})
 
-(defn parse-access-flags [n]
+(defn parse-field-flags [n]
   {:public     (bit-test n 0)
    :private    (bit-test n 1)
    :protected  (bit-test n 2)
    :static     (bit-test n 3)
    :final      (bit-test n 4)
-   :super      (bit-test n 5) ;; Not final, can be extended
    :volatile   (bit-test n 6)
    :transient  (bit-test n 7)
-   :interface  (bit-test n 9)
-   :abstract   (bit-test n 10)
-   :synthetic  (bit-test n 12) ;; generated
-   :annotation (bit-test n 13)
+   :synthetic  (bit-test n 12)
    :enum       (bit-test n 14)
-   :module     (bit-test n 15)})
+   })
 
+(defn parse-method-flags [n]
+  {:public     (bit-test n 0)
+   :private    (bit-test n 1)
+   :protected  (bit-test n 2)
+   :static     (bit-test n 3)
+   :final      (bit-test n 4)
+   :synchronized (bit-test n 5)
+   :bridge     (bit-test n 6)
+   :varargs    (bit-test n 7)
+   :native     (bit-test n 8)
+   :abstract   (bit-test n 10)
+   :strict     (bit-test n 11)
+   :synthetic  (bit-test n 12)})
 
 (defn- read-methods [^java.io.DataInputStream ois constant-pool]
   (doall
@@ -152,7 +174,7 @@
                name-idx     (.readUnsignedShort ois)
                descr-idx    (.readUnsignedShort ois)
                attrs        (read-attributes :method ois constant-pool)]]
-     {:access (parse-access-flags access-flags)
+     {:access (parse-method-flags access-flags)
       :name   (-> name-idx constant-pool :data str!)
       :descr  (-> descr-idx constant-pool :data str! (signature/with-str (signature/method-type-signature)))
       :attrs  attrs})))
@@ -160,7 +182,7 @@
 (defn read-fields [^java.io.DataInputStream ois constant-pool]
   (doall
    (for [i (range (.readUnsignedShort ois))
-         :let [access-flags (-> ois .readUnsignedShort parse-access-flags)
+         :let [access-flags (-> ois .readUnsignedShort parse-field-flags)
                name         (-> ois .readUnsignedShort constant-pool :data str!)
                descr        (-> ois .readUnsignedShort constant-pool :data str!)
                attributes   (read-attributes :field ois constant-pool)]]
@@ -200,5 +222,5 @@
        :attributes  attrs
        :fields      fields
        :methods     methods
-       :access      (parse-access-flags access-flags)
+       :access      (parse-class-flags access-flags)
        :constants   pool})))
