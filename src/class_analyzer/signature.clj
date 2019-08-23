@@ -122,6 +122,20 @@
 
 (defn- type-signature [] (either field-type-signature base-type))
 
+(defn field-descriptor []
+  (letfn [(field-type [] (either base-type object-type array-type))
+          (object-type [] (wrapped \L class-name \;))
+          (array-type [] (when (expect \[) (component-type)))
+          (component-type [] (field-type))
+          (class-name []
+            (let [pkgs+id  (separated-tokens-1 \/ identifier)
+                  pkgs     (pop pkgs+id)
+                  id       (peek pkgs+id)]
+              (assert pkgs+id)
+              {:package (clojure.string/join "." (pop pkgs+id))
+               :class   (peek pkgs+id)}))]
+    (field-type)))
+
 (defn- array-type-signature []
   (when (expect \[)
     (let [ts (type-signature)]
@@ -199,6 +213,7 @@
            :throws ths})))))
 
 (defn render-type [t]
-  (if (keyword? t)
-    (name t)
-    (str (:package t) "." (:class t))))
+  (cond (keyword? t) (name t)
+        (:array t)   (str (render-type (:array t)) "[]")
+        (:package t) (str (:package t) "." (:class t))
+        :else        nil #_(throw (ex-info "Unknown type" {:type t}))))

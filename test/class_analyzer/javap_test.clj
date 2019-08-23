@@ -25,4 +25,8 @@
   (is (= (javap-output example-jar "clojure.lang.IObj")
          (own-output example-jar "clojure/lang/IObj.class"))))
 
-;; (render (j/zip-open-file example-jar "clojure/lang/IObj.class" c/read-class))
+(deftest parse-clojure-aseq
+  (is (= (javap-output example-jar "clojure.lang.ASeq")
+         (own-output example-jar "clojure/lang/ASeq.class"))))
+
+;; (render (j/zip-open-file example-jar "clojure/lang/ASeq.class" c/read-class))

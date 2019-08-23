@@ -196,7 +196,8 @@
                attributes   (read-attributes :field ois constant-pool)]]
      {:name   name
       :access access-flags
-      :descr  (signature/with-str descr (signature/field-type-signature))
+      :descr-raw descr
+      :descr  (signature/with-str descr (signature/field-descriptor))
       :attributes attributes})))
 
 (defn- read-interfaces [^DataInputStream ois constant-pool]

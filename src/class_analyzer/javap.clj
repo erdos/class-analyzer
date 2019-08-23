@@ -11,6 +11,8 @@
   (->>
    (cond-> []
      (:public m) (conj "public")
+     (:protected m) (conj "protected")
+     (:transient m) (conj "transient")
      (:static m) (conj "static")
      (and (:abstract m) (not (:interface m))) (conj "abstract")
      (:final m)  (conj "final"))
@@ -85,7 +87,7 @@
   (println ";"))
 
 (defn print-method* [obj m]
-  (when (or (:public (:access m))
+  (when (or ((some-fn :public :protected) (:access m))
             (= "<clinit>" (:name m)))
     (case (:name m)
       "<init>"   (print-ctor obj m)
@@ -108,7 +110,8 @@
         (print " extends" sc)))
 
     (when-let [is (seq (:interfaces obj))]
-      (print (if interface? " extends" " implements") (clojure.string/join ", " is))))
+      (print (if interface? " extends" " implements")
+             (clojure.string/join "," is))))
 
   (println " {")
 
