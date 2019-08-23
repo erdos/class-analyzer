@@ -93,7 +93,9 @@
 
 
 (defn- print-method [obj m]
-  (print \space (render-accessors (:access m)))
+  (print \space)
+  (when-let [rea (render-accessors (:access m))]
+    (print (str \space rea)))
 
   (print-method-generics obj m)
   (print \space)
