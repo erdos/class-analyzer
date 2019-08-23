@@ -42,14 +42,15 @@
     :else (assert false (str "Unexpected!!" (pr-str x)))))
 
 (defn print-method-args [obj m]
-  (as->
-      (if-let [[s] (seq (filter (comp #{"Signature"} :name) (:attrs m)))]
+  (-> (if-let [[s] (seq (filter (comp #{"Signature"} :name) (:attrs m)))]
         (map render-generic (:args s))
         (map signature/render-type (:args (:descr m))))
-      *
-    (clojure.string/join ", " *)
-    (str "(" * ")")
-    (print *)))
+      (->> (clojure.string/join ", "))
+      ;; if it is a varargs method: replace last two characters with '...'
+      (cond-> (:varargs (:access m))
+        (as-> * (str (subs * 0 (- (count *) 2)) "...")))
+      (as-> * (str "(" * ")"))
+      (print)))
 
 (defn print-throws [obj m]
   (when-let [e (some #(when (= "Exceptions" (:name %)) (:value %)) (:attrs m))]
