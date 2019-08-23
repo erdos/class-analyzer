@@ -33,4 +33,15 @@
   (is (= (javap-output example-jar "clojure.lang.IAtom2")
          (own-output example-jar "clojure/lang/IAtom2.class"))))
 
-;; (render (j/zip-open-file example-jar "clojure/lang/ASeq.class" c/read-class))
+(deftest parse-clojure-rt
+  (is (= (javap-output example-jar "clojure.lang.RT")
+         (own-output example-jar "clojure/lang/RT.class"))))
+
+;; good: Ratio, ProxyHandler, Range, PersistentTreeSet
+
+#_
+(deftest parse-clojure-range
+  (is (= (javap-output example-jar "clojure.lang.PersistentTreeSet")
+         (own-output example-jar "clojure/lang/PersistentTreeSet.class"))))
+
+;; (render (j/zip-open-file example-jar "clojure/lang/RT.class" c/read-class))

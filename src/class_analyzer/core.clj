@@ -202,7 +202,7 @@
 
 (defn- read-interfaces [^DataInputStream ois constant-pool]
   (doall
-   (for [i (range (.readUnsignedShort ois))
+   (for [_    (range (.readUnsignedShort ois))
          :let [class-idx (.readUnsignedShort ois)]]
      (-> class-idx constant-pool :data ->class-name))))
 
@@ -210,8 +210,8 @@
   (let [ois (new java.io.DataInputStream input-stream)]
 
     ;; magic number
-    (assert (= 51966 (.readUnsignedShort ois))) ;; CA FE
-    (assert (= 47806 (.readUnsignedShort ois))) ;; BA BE
+    (assert (= 0xCAFE (.readUnsignedShort ois)))
+    (assert (= 0xBABE (.readUnsignedShort ois)))
 
     (let [[minor major] [(.readUnsignedShort ois) (.readUnsignedShort ois)]
 

@@ -124,7 +124,7 @@
 (defn field-descriptor []
   (letfn [(field-type [] (either base-type object-type array-type))
           (object-type [] (wrapped \L class-name \;))
-          (array-type [] (when (expect \[) (component-type)))
+          (array-type [] (when (expect \[) (some->> (component-type) (hash-map :array))))
           (component-type [] (field-type))
           (class-name []
             (let [pkgs+id  (separated-tokens-1 \/ identifier)

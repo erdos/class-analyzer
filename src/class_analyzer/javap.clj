@@ -10,17 +10,20 @@
 (defn- render-accessors [m]
   (->>
    (cond-> []
-     (:public m) (conj "public")
+     (:public m)    (conj "public")
      (:protected m) (conj "protected")
      (:transient m) (conj "transient")
-     (:static m) (conj "static")
+     (:static m)    (conj "static")
+     (:volatile m)  (conj "volatile")
      (and (:abstract m) (not (:interface m))) (conj "abstract")
-     (:final m)  (conj "final"))
-   (clojure.string/join " ")))
+     (:final m)     (conj "final"))
+   (clojure.string/join " ")
+   (not-empty)))
 
 (defn- print-field [f]
-  (print \space (render-accessors (:access f)))
-  (println (str \space (-> f :descr signature/render-type) \space (:name f) ";")))
+  (when (not (:private (:access f)))
+    (print \space (render-accessors (:access f)))
+    (println (str \space (-> f :descr signature/render-type) \space (:name f) ";"))))
 
 (defn- render-generic [x]
   (cond
@@ -34,7 +37,8 @@
                       (clojure.string/join ", ")
                       (str "<"))
                  (str ">")))
-
+    (:array x) (str (render-generic (:array x)) "[]")
+    (keyword? x) (name x)
     :else (assert false (str "Unexpected!!" (pr-str x)))))
 
 (defn print-method-args [obj m]
@@ -64,7 +68,9 @@
       (print ">"))))
 
 (defn- print-ctor [obj m]
-  (print \space (render-accessors (:access m)))
+  (if-let [as (render-accessors (:access m))]
+    (print \space as)
+    (print \space))
   (print-method-generics obj m)
   (print (str \space (:class obj)))
   (print-method-args obj m)
@@ -81,13 +87,18 @@
   (print \space (render-accessors (:access m)))
 
   (print-method-generics obj m)
-  (print (str \space (-> m :descr :return signature/render-type) \space (:name m)))
+  (print \space)
+  (if-let [return (some #(when (= "Signature" (:name %)) (:return %)) (:attrs m))]
+    (print (render-generic return))
+    (print (-> m :descr :return signature/render-type)))
+  (print \space)
+  (print (:name m))
   (print-method-args obj m)
   (print-throws obj m)
   (println ";"))
 
 (defn print-method* [obj m]
-  (when (or ((some-fn :public :protected) (:access m))
+  (when (or (not (:private (:access m)))
             (= "<clinit>" (:name m)))
     (case (:name m)
       "<init>"   (print-ctor obj m)
