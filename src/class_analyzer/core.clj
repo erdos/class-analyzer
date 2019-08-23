@@ -9,6 +9,9 @@
 
 (defmacro ^:private  str! [x] `(doto ~x (assert ~(str "Not string: " (pr-str x)))))
 
+(defn- ->class-name [s]
+  (assert (string? s))
+  (symbol (.replace ^String s  "/" ".")))
 
 ;; https://medium.com/@davethomas_9528/writing-hello-world-in-java-byte-code-34f75428e0ad
 ;; https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html
@@ -116,6 +119,11 @@
             :class (signature/class-signature))
           (or (throw (ex-info "Could not parse signature!" {:discriminator d, :signature source})))))))
 
+(defmethod read-attribute "Exceptions" [d ^java.io.DataInputStream dis _ _ constant-pool]
+  (doall
+   (for [i (range (.readUnsignedShort dis))]
+     (-> dis .readUnsignedShort constant-pool :data ->class-name))))
+
 (defn read-attributes [discriminator ^java.io.DataInputStream ois constant-pool]
   (doall
    (for [i (range (.readUnsignedShort ois))
@@ -195,8 +203,7 @@
   (doall
    (for [i (range (.readUnsignedShort ois))
          :let [class-idx (.readUnsignedShort ois)]]
-     (-> class-idx constant-pool :data str!))))
-
+     (-> class-idx constant-pool :data ->class-name))))
 
 (defn read-class [input-stream]
   (let [ois (new java.io.DataInputStream input-stream)]
@@ -209,8 +216,8 @@
 
           pool          (-> ois constant-pool cp-enhance-1 cp-enhance-2)
           access-flags  (.readUnsignedShort ois)
-          class         (-> ois .readUnsignedShort pool :data str!)
-          super-class   (-> ois .readUnsignedShort pool :data (or "java.lang.Object"))
+          class         (-> ois .readUnsignedShort pool :data ->class-name)
+          super-class   (some-> ois .readUnsignedShort pool :data ->class-name)
           interfaces    (read-interfaces ois pool)
           fields        (read-fields ois pool)
           methods       (read-methods ois pool)
