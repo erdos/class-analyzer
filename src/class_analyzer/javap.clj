@@ -26,7 +26,9 @@
 
 (defn- print-field [f]
   (when (not (:private (:access f)))
-    (print \space (render-accessors (:access f)))
+    (if-let [a (render-accessors (:access f))]
+      (print (str \space \space a))
+      (print \space))
     (println (str \space (-> f :descr signature/render-type) \space (:name f) ";"))))
 
 
@@ -89,7 +91,9 @@
 
 
 (defn- print-static-init [obj m]
-  (println "  static {};"))
+  (if (:public (:access m))
+    (println "  public static {};")
+    (println "  static {};")))
 
 
 (defn- print-method [obj m]
@@ -122,11 +126,11 @@
   (when-let [sf (some #(when (= "SourceFile" (:name %)) (:value %)) (:attributes obj))]
     (println (str "Compiled from " \" sf \")))
 
-  (print (render-accessors (:access obj)))
+  (when-let [a (render-accessors (:access obj))]
+    (print (str a \space)))
 
   (let [interface? (:interface (:access obj))]
-
-    (print (if interface? " interface" " class") (:class obj))
+    (print (if interface? "interface" "class") (:class obj))
 
     (when-let [sc (:super-class obj)]
       (if-not (= 'java.lang.Object sc)

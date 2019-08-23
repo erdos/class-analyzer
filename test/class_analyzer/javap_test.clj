@@ -17,31 +17,12 @@
 (defn- javap-output [file class]
   (clojure.string/split-lines (:out (sh "javap"  "-classpath" file class))))
 
-(deftest parse-clojure-util-class
-  (is (= (javap-output example-jar "clojure.lang.Util")
-         (own-output example-jar "clojure/lang/Util.class"))))
+(deftest all-clojure-classes
+  (doseq [class-name (j/jar-classes example-jar)]
+    (println "Testing" class-name)
+    (testing class-name
+      (is (= (javap-output example-jar class-name)
+             (own-output example-jar (str (.replace (str class-name) "." "/") ".class")))))))
 
-(deftest parse-clojure-iobj-interface
-  (is (= (javap-output example-jar "clojure.lang.IObj")
-         (own-output example-jar "clojure/lang/IObj.class"))))
-
-(deftest parse-clojure-aseq
-  (is (= (javap-output example-jar "clojure.lang.ASeq")
-         (own-output example-jar "clojure/lang/ASeq.class"))))
-
-(deftest parse-clojure-aseq
-  (is (= (javap-output example-jar "clojure.lang.IAtom2")
-         (own-output example-jar "clojure/lang/IAtom2.class"))))
-
-(deftest parse-clojure-rt
-  (is (= (javap-output example-jar "clojure.lang.RT")
-         (own-output example-jar "clojure/lang/RT.class"))))
-
-;; good: Ratio, ProxyHandler, Range, PersistentTreeSet
-
-#_
-(deftest parse-clojure-range
-  (is (= (javap-output example-jar "clojure.lang.PersistentTreeSet")
-         (own-output example-jar "clojure/lang/PersistentTreeSet.class"))))
 
 ;; (render (j/zip-open-file example-jar "clojure/lang/RT.class" c/read-class))
