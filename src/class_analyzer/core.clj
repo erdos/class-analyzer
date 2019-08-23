@@ -9,6 +9,7 @@
 
 (defmacro ^:private  str! [x] `(doto ~x (assert ~(str "Not string: " (pr-str x)))))
 
+
 (defn- ->class-name [s]
   (assert (string? s))
   (symbol (.replace ^String s  "/" ".")))
@@ -119,10 +120,12 @@
             :class (signature/class-signature))
           (or (throw (ex-info "Could not parse signature!" {:discriminator d, :signature source})))))))
 
+
 (defmethod read-attribute "Exceptions" [d ^java.io.DataInputStream dis _ _ constant-pool]
   (doall
    (for [i (range (.readUnsignedShort dis))]
      (-> dis .readUnsignedShort constant-pool :data ->class-name))))
+
 
 (defn read-attributes [discriminator ^java.io.DataInputStream ois constant-pool]
   (doall
@@ -134,6 +137,7 @@
        (merge {:name attr-name} attr)
        {:name  attr-name
         :value attr}))))
+
 
 ;; https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.1-200-E.1
 (defn parse-class-flags [n]
@@ -149,6 +153,7 @@
    :annotation (bit-test n 13)
    :enum       (bit-test n 14)})
 
+
 (defn parse-field-flags [n]
   {:public     (bit-test n 0)
    :private    (bit-test n 1)
@@ -160,6 +165,7 @@
    :synthetic  (bit-test n 12)
    :enum       (bit-test n 14)
    })
+
 
 (defn parse-method-flags [n]
   {:public     (bit-test n 0)
@@ -175,6 +181,7 @@
    :strict     (bit-test n 11)
    :synthetic  (bit-test n 12)})
 
+
 (defn- read-methods [^java.io.DataInputStream ois constant-pool]
   (doall
    (for [i (range (.readUnsignedShort ois))
@@ -186,6 +193,7 @@
       :name   (-> name-idx constant-pool :data str!)
       :descr  (-> descr-idx constant-pool :data str! (signature/with-str (signature/method-type-signature)))
       :attrs  attrs})))
+
 
 (defn read-fields [^java.io.DataInputStream ois constant-pool]
   (doall
@@ -200,11 +208,13 @@
       :descr  (signature/with-str descr (signature/field-descriptor))
       :attributes attributes})))
 
+
 (defn- read-interfaces [^DataInputStream ois constant-pool]
   (doall
    (for [_    (range (.readUnsignedShort ois))
          :let [class-idx (.readUnsignedShort ois)]]
      (-> class-idx constant-pool :data ->class-name))))
+
 
 (defn read-class [input-stream]
   (let [ois (new java.io.DataInputStream input-stream)]

@@ -2,10 +2,13 @@
   (:require [class-analyzer.core :as c]
             [class-analyzer.signature :as signature]))
 
+
 (set! *warn-on-reflection* true)
+
 
 (def ^:dynamic *verbose* false)
 (def ^:dynamic *level* :public) ;; :public :protected :package :private
+
 
 (defn- render-accessors [m]
   (->>
@@ -20,10 +23,12 @@
    (clojure.string/join " ")
    (not-empty)))
 
+
 (defn- print-field [f]
   (when (not (:private (:access f)))
     (print \space (render-accessors (:access f)))
     (println (str \space (-> f :descr signature/render-type) \space (:name f) ";"))))
+
 
 (defn- render-generic [x]
   (cond
@@ -41,6 +46,7 @@
     (keyword? x) (name x)
     :else (assert false (str "Unexpected!!" (pr-str x)))))
 
+
 (defn print-method-args [obj m]
   (-> (if-let [[s] (seq (filter (comp #{"Signature"} :name) (:attrs m)))]
         (map render-generic (:args s))
@@ -52,9 +58,11 @@
       (as-> * (str "(" * ")"))
       (print)))
 
+
 (defn print-throws [obj m]
   (when-let [e (some #(when (= "Exceptions" (:name %)) (:value %)) (:attrs m))]
     (print " throws" (clojure.string/join ", " e))))
+
 
 (defn- print-method-generics [obj m]
   (when-let [[s] (seq (filter (comp #{"Signature"} :name) (:attrs m)))]
@@ -68,6 +76,7 @@
        (print))
       (print ">"))))
 
+
 (defn- print-ctor [obj m]
   (if-let [as (render-accessors (:access m))]
     (print \space as)
@@ -78,12 +87,11 @@
   (print-throws obj m)
   (println ";"))
 
+
 (defn- print-static-init [obj m]
   (println "  static {};"))
 
 
-;; TODO: generic info!!
-;; TODO: throws!
 (defn- print-method [obj m]
   (print \space (render-accessors (:access m)))
 
@@ -97,6 +105,7 @@
   (print-method-args obj m)
   (print-throws obj m)
   (println ";"))
+
 
 (defn print-method* [obj m]
   (when (or (not (:private (:access m)))
