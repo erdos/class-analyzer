@@ -9,15 +9,15 @@
 (defmacro with-str [s & bodies]
   `(binding [*reader* (PushbackReader. (StringReader. ~s))] ~@bodies))
 
-(defn- expect [s]
-  (assert (char? s))
-  (let [r (.read *reader*)]
-    (if (neg? r)
-      nil
-      (if (= (char r) (char s))
-        s
-        (do (.unread *reader* r)
-            nil)))))
+(defn- expect
+  ([s] (expect s s))
+  ([s return]
+   (assert (char? s))
+   (let [r (.read *reader*)]
+     (when-not (neg? r)
+       (if (= (char r) (char s))
+         return
+         (do (.unread *reader* r) nil))))))
 
 ;; returns a read identifier or nil
 (defn identifier
@@ -41,9 +41,7 @@
 
 (defn- either [& reader-functions] (some #(%) reader-functions))
 
-(defn- wildcard-indicator []
-  (or (and (expect \+) :super)
-      (and (expect \-) :extends)))
+(defn- wildcard-indicator [] (or (expect \+ :super) (expect \- :extends)))
 
 (defn- expect! [s]
   (assert (expect s)
@@ -102,14 +100,14 @@
 (declare class-type-signature array-type-signature type-variable-signature type-signature base-type)
 
 (defn- base-type []
-  (either #(and (expect \B) :byte)
-          #(and (expect \C) :char)
-          #(and (expect \D) :double)
-          #(and (expect \F) :float)
-          #(and (expect \I) :int)
-          #(and (expect \J) :long)
-          #(and (expect \S) :short)
-          #(and (expect \Z) :boolean)))
+  (or (expect \B :byte)
+      (expect \C :char)
+      (expect \D :double)
+      (expect \F :float)
+      (expect \I :int)
+      (expect \J :long)
+      (expect \S :short)
+      (expect \Z :boolean)))
 
 ;; L - reference
 ;; [ - array of one dimension
@@ -122,6 +120,7 @@
 
 (defn- type-signature [] (either field-type-signature base-type))
 
+;; https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.3.2
 (defn field-descriptor []
   (letfn [(field-type [] (either base-type object-type array-type))
           (object-type [] (wrapped \L class-name \;))
@@ -144,13 +143,13 @@
 
 (defn- class-type-signature []
   (letfn [(type-argument []
-            (either #(expect \*)
-                    #(let [ind? (wildcard-indicator)
-                           fts  (field-type-signature)]
-                       (when ind? (assert fts))
-                       (when fts
-                         {:indicator ind?
-                          :field-type-signature fts}))))
+            (or (expect \*)
+                (let [ind? (wildcard-indicator)
+                      fts  (field-type-signature)]
+                  (when ind? (assert fts))
+                  (when fts
+                    {:indicator ind?
+                     :field-type-signature fts}))))
           (type-arguments []
             (wrapped \< #(repeat+ type-argument) \>))]
     (when (expect \L)
@@ -158,8 +157,7 @@
             pkgs     (pop pkgs+id)
             id       (peek pkgs+id)
             id-type? (type-arguments) ;; opt
-            sufs (repeat*
-                          #(when (expect \.)
+            sufs (repeat* #(when (expect \.)
                              (hash-map :id (identifier)
                                        :type-arg (type-argument))))]
         (expect! \;)
@@ -169,14 +167,12 @@
           id-type? (assoc :generic id-type?)
           (seq sufs) (assoc :sufs sufs))))))
 
-
 (def super-class-signature class-type-signature)
 (def super-interface-signature class-type-signature)
 
-(defn class-signature
-  "FormalTypeParameters_opt SuperclassSignature SuperinterfaceSignature*"
-  []
-  (let [fts        (formal-type-parameters)]
+;; "FormalTypeParameters_opt SuperclassSignature SuperinterfaceSignature*"
+(defn class-signature []
+  (let [fts (formal-type-parameters)]
     (if-let [superclass (super-class-signature)]
       (let [is (repeat* super-interface-signature)]
         {:formal-type-parameters fts
@@ -216,4 +212,4 @@
   (cond (keyword? t) (name t)
         (:array t)   (str (render-type (:array t)) "[]")
         (:package t) (str (:package t) "." (:class t))
-        :else        nil #_(throw (ex-info "Unknown type" {:type t}))))
+        :else        (throw (ex-info "Unknown type" {:type t}))))
