@@ -15,22 +15,22 @@
    (cond-> []
      (:public m)    (conj "public")
      (:protected m) (conj "protected")
-     (:transient m) (conj "transient")
+     (:private m)    (conj "private")
+
      (:static m)    (conj "static")
-     (:volatile m)  (conj "volatile")
      (and (:abstract m) (not (:interface m))) (conj "abstract")
-     (:final m)     (conj "final"))
+     (:synchronized m) (conj "synchronized")
+
+     (:final m)     (conj "final") ;; final < transient
+
+     (:transient m) (conj "transient")
+     (:volatile m)  (conj "volatile")
+
+     (:native m)     (conj "native")
+
+     (:strict m)     (conj "strictfp"))
    (clojure.string/join " ")
    (not-empty)))
-
-
-(defn- print-field [f]
-  (when (not (:private (:access f)))
-    (if-let [a (render-accessors (:access f))]
-      (print (str \space \space a))
-      (print \space))
-    (println (str \space (-> f :descr signature/render-type) \space (:name f) ";"))))
-
 
 (defn- render-generic [x]
   (cond
@@ -47,6 +47,21 @@
     (:array x) (str (render-generic (:array x)) "[]")
     (keyword? x) (name x)
     :else (assert false (str "Unexpected!!" (pr-str x)))))
+
+(defn- print-field [f]
+  (when (not (:private (:access f)))
+    (if-let [a (render-accessors (:access f))]
+      (print (str \space \space a))
+      (print \space))
+    (print \space)
+
+    (if-let [return (some #(when (= "Signature" (:name %)) %) (:attributes f))]
+      (print (render-generic return))
+      (print (-> f :descr signature/render-type)))
+
+    (print \space)
+    (print (:name f))
+    (println ";")))
 
 
 (defn print-method-args [obj m]
@@ -132,9 +147,11 @@
   (let [interface? (:interface (:access obj))]
     (print (if interface? "interface" "class") (:class obj))
 
-    (when-let [sc (:super-class obj)]
-      (if-not (= 'java.lang.Object sc)
-        (print " extends" sc)))
+    (if-let [superclass (some #(when (= "Signature" (:name %)) (:superclass %)) (:attributes obj))]
+      (print " extends" (render-generic superclass))
+      (when-let [sc (:super-class obj)]
+        (if-not (= 'java.lang.Object sc)
+          (print " extends" sc))))
 
     (when-let [is (seq (:interfaces obj))]
       (print (if interface? " extends" " implements")
