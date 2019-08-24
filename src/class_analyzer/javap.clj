@@ -19,9 +19,9 @@
 
      (:static m)    (conj "static")
      (and (:abstract m) (not (:interface m))) (conj "abstract")
-     (:synchronized m) (conj "synchronized")
 
-     (:final m)     (conj "final") ;; final < transient
+     (:final m)     (conj "final") ;; final < transient,synchronized
+     (:synchronized m) (conj "synchronized")
 
      (:transient m) (conj "transient")
      (:volatile m)  (conj "volatile")
