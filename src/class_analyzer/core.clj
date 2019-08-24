@@ -1,14 +1,11 @@
 (ns class-analyzer.core
   (:import [java.io DataInputStream])
   (:require [clojure.java.io :as io :refer [file]]
+            [class-analyzer.util :refer :all]
             [class-analyzer.signature :as signature]))
 
 
 (set! *warn-on-reflection* true)
-
-
-(defmacro ^:private  str! [x] `(doto ~x (assert ~(str "Not string: " (pr-str x)))))
-
 
 (defn- ->class-name [s]
   (assert (string? s))
@@ -16,17 +13,6 @@
 
 ;; https://medium.com/@davethomas_9528/writing-hello-world-in-java-byte-code-34f75428e0ad
 ;; https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html
-
-
-(def ^:private ^java.nio.charset.Charset UTF-8 (java.nio.charset.Charset/forName "UTF-8"))
-
-
-(defn- stream->str [^DataInputStream is len]
-  (let [ba (byte-array len)]
-    (loop [read-len 0]
-      (if (= read-len len)
-        (new String ba UTF-8)
-        (recur (+ read-len (.read is ba read-len (- len read-len))))))))
 
 
 (defn- constant-pool-record [^DataInputStream ois]

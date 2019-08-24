@@ -36,7 +36,12 @@
   (cond
     (= \* x) "?"
     (string? x) x
-    (:field-type-signature x) (recur (:field-type-signature x)) ;; ?
+    (string? (:value x)) (:value x)
+    (:field-type-signature x)
+    (case (:indicator x)
+      :extends (str "? extends " (render-generic (:field-type-signature x)))
+      :super   (str "? super " (render-generic (:field-type-signature x)))
+      (recur (:field-type-signature x)))
     (:package x)
     (str (:package x) "." (:class x)
          (some-> x :generic
@@ -145,17 +150,33 @@
     (print (str a \space)))
 
   (let [interface? (:interface (:access obj))]
-    (print (if interface? "interface" "class") (:class obj))
+    (print (if interface? "interface " "class "))
+
+
+    ;; signature here!!
+    (print (:class obj))
+
+    (when-let [tps (some #(when (= "Signature" (:name %))
+                            (:formal-type-parameters %)) (:attributes obj))]
+      (print "<")
+      (print (clojure.string/join ", " (map signature/render-formal-type-parameter tps)))
+      (print ">"))
 
     (if-let [superclass (some #(when (= "Signature" (:name %)) (:superclass %)) (:attributes obj))]
-      (print " extends" (render-generic superclass))
+      (when-not (= {:package "java.lang" :class "Object"} superclass)
+        (print " extends" (render-generic superclass)))
       (when-let [sc (:super-class obj)]
         (if-not (= 'java.lang.Object sc)
           (print " extends" sc))))
 
-    (when-let [is (seq (:interfaces obj))]
+
+    ;; ha implements van, akkor szorosan egymas mogott vannak
+    (if-let [interfaces (some #(when (= "Signature" (:name %)) (seq (:superinterface %))) (:attributes obj))]
       (print (if interface? " extends" " implements")
-             (clojure.string/join "," is))))
+             (clojure.string/join ", " (map render-generic interfaces)))
+      (when-let [is (seq (:interfaces obj))]
+        (print (if interface? " extends" " implements")
+               (clojure.string/join "," is)))))
 
   (println " {")
 

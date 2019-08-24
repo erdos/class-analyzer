@@ -41,7 +41,7 @@
 
 (defn- either [& reader-functions] (some #(%) reader-functions))
 
-(defn- wildcard-indicator [] (or (expect \+ :super) (expect \- :extends)))
+(defn- wildcard-indicator [] (or (expect \+ :extends) (expect \- :super)))
 
 (defn- expect! [s]
   (assert (expect s)
@@ -92,6 +92,14 @@
       {:identifier id
        :classbound classbound
        :interfacebound interfacebound})))
+
+;;
+(defn render-formal-type-parameter [ftp]
+  (assert (:identifier ftp))
+  (assert (:classbound ftp))
+  (assert (:interfacebound ftp))
+  ;; TODO: also use classbound, interfacebound...
+  (:identifier ftp))
 
 ;; < FormalTypeParameter+ >
 (defn- formal-type-parameters []
