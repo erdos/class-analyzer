@@ -51,7 +51,12 @@
 
 (defmethod read-op :default [{:keys [mnemonic args]}]
   (assert (vector? args))
-  {:args (mapv read-arg args)})
+  (let [read (mapv read-arg args)]
+    {:args read
+     :vals (mapv (fn [code value]
+                   (when (#{:cpidx1 :cpidx2} code)
+                     (-> value *constant-pool*)))
+                 args read)}))
 
 (defmethod read-op :tableswitch [_]
   (assert false "Not impled!")

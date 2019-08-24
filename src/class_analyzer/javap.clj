@@ -32,6 +32,7 @@
    (clojure.string/join " ")
    (not-empty)))
 
+
 (defn- render-generic [x]
   (cond
     (= \* x) "?"
@@ -52,6 +53,7 @@
     (:array x) (str (render-generic (:array x)) "[]")
     (keyword? x) (name x)
     :else (assert false (str "Unexpected!!" (pr-str x)))))
+
 
 (defn- print-field [f]
   (when (not (:private (:access f)))
@@ -133,6 +135,98 @@
   (println ";"))
 
 
+(defn- print-code-attribute [attribute]
+  (assert (= "Code" (:name attribute)))
+  (println "\tCode:")
+  (doseq [code (:code attribute)]
+    (printf "\t%4d: %s"
+            (:offset code)
+            (name (:mnemonic code)))
+    (when-let [x (first (:vals code))]
+      ;; itt dinamikusan szamoljuk a szokozoket.
+      (let [spaces (apply str (repeat (- 14 (count (name (:mnemonic code)))) " "))]
+        (print (str spaces "#" (first (:args code)))))
+      (case (:discriminator x)
+        :methodref (print (str "\t\t// Method " (:class x) ".\"" (:name x) "\":" (:type x)))
+        :fieldref  (print (str "\t\t// Field " (:name x) ":" (:type x)))
+        :class     (print (str "\t\t// class " (first (:data x))))))
+    (println)))
+
+(print-code-attribute
+ {:name "Code",
+  :max-stack 2,
+  :max-locals 2,
+  :code
+  '({:args [],
+    :vals [],
+    :op-code 42,
+    :mnemonic :aload_0,
+    :offset 0,
+    :nr 0}
+   {:args [1],
+    :vals
+
+    [{:discriminator :methodref,
+      :data [4 22],
+      :class "java/lang/Object",
+      :name "<init>",
+      :type "()V"}],
+    :op-code 183,
+    :mnemonic :invokespecial,
+    :offset 1,
+    :nr 1}
+   {:args [],
+    :vals [],
+    :op-code 42,
+    :mnemonic :aload_0,
+    :offset 4,
+    :nr 2}
+   {:args [],
+    :vals [],
+    :op-code 43,
+    :mnemonic :aload_1,
+    :offset 5,
+    :nr 3}
+   {:args [2],
+    :vals
+    [{:discriminator :fieldref,
+      :data [3 23],
+      :class "clojure/lang/Volatile",
+      :name "val",
+      :type "Ljava/lang/Object;"}],
+    :op-code 181,
+    :mnemonic :putfield,
+    :offset 6,
+    :nr 4}
+   {:args [],
+    :vals [],
+    :op-code 177,
+    :mnemonic :return,
+    :offset 9,
+    :nr 5}),
+  :exception-table (),
+  :attrs
+  ({:name "LineNumberTable",
+    :value
+    ({:start-pc 0, :line-number 17}
+     {:start-pc 4, :line-number 18}
+     {:start-pc 9, :line-number
+      19})}
+   {:name "LocalVariableTable",
+    :value
+    ({:start-pc 0,
+      :length 10,
+      :name-idx "this",
+      :descr-idx "Lclojure/lang/Volatile;",
+      :index 0}
+     {:start-pc 0,
+      :length 10,
+      :name-idx "val",
+      :descr-idx "Ljava/lang/Object;",
+      :index 1})})})
+
+
+
 (defn print-method* [obj m]
   (when (or (not (:private (:access m)))
             (= "<clinit>" (:name m)))
@@ -152,8 +246,6 @@
   (let [interface? (:interface (:access obj))]
     (print (if interface? "interface " "class "))
 
-
-    ;; signature here!!
     (print (:class obj))
 
     (when-let [tps (some #(when (= "Signature" (:name %))
