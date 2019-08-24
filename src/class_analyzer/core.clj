@@ -77,9 +77,10 @@
    (fn [acc k v]
      (case (:discriminator v)
        (:fieldref :methodref :interfacemethodred)
-       (update acc k merge {:class (-> v :data first acc :data str!)
-                            :name  (-> v :data second acc :name str!)
-                            :type (-> v :data second acc :type str!)})
+       (update acc k assoc
+               :class (-> v :data first acc :data str!)
+               :name  (-> v :data second acc :name str!)
+               :type (-> v :data second acc :type str!))
        acc))
    pool pool))
 

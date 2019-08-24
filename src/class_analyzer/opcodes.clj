@@ -20,8 +20,9 @@
   ;; 1 + sum( int -> 4, short -> 2, byte->1)
   ;; (assert (pos? size-in-bytes))
   (assert (or (= :special args) (vector? args)))
-  `(alter-var-root #'instructions (assoc ~number)
+  `(alter-var-root #'instructions assoc ~opcode
                    {:mnemonic ~mnemonic, :args ~args}))
+
 
 (instruction 0  0x0 :nop [])
 (instruction 1  0x1 :aconst_null [])
@@ -41,11 +42,11 @@
 (instruction 15 0xf :dconst_1 [])
 
 (instruction 16 0x10 :bipush [:byte]) ;; one byte embedded constant
-(instruction 17 0x11 :sipush 3)
-(instruction 18 0x12 :ldc [:byte]) ;; one byte embedded constant pool idx
+(instruction 17 0x11 :sipush [:short])
+(instruction 18 0x12 :ldc [:cpidx1]) ;; one byte embedded constant pool idx
 
-(instruction 19 0x13 :ldc_w 3)
-(instruction 20 0x14 :ldc2_w 3)
+(instruction 19 0x13 :ldc_w [:cpidx2])
+(instruction 20 0x14 :ldc2_w [:cpidx2])
 
 (instruction 21 0x15 :iload [:byte]) ;; one byte embedded local variable idx
 (instruction 22 0x16 :lload [:byte])
@@ -185,23 +186,23 @@
 (instruction 151 0x97 :dcmpl [])
 (instruction 152 0x98 :dcmpg [])
 
-(instruction 153 0x99 :ifeq [:short]) ;; branchbyte
-(instruction 154 0x9a :ifne [:short])
-(instruction 155 0x9b :iflt [:short])
-(instruction 156 0x9c :ifge [:short])
-(instruction 157 0x9d :ifgt [:short])
-(instruction 158 0x9e :ifle [:short])
+(instruction 153 0x99 :ifeq [:branchoffset])
+(instruction 154 0x9a :ifne [:branchoffset])
+(instruction 155 0x9b :iflt [:branchoffset])
+(instruction 156 0x9c :ifge [:branchoffset])
+(instruction 157 0x9d :ifgt [:branchoffset])
+(instruction 158 0x9e :ifle [:branchoffset])
 
-(instruction 159 0x9f :if_icmpeq 3)
-(instruction 160 0xa0 :if_icmpne 3)
-(instruction 161 0xa1 :if_icmplt 3)
-(instruction 162 0xa2 :if_icmpge 3)
-(instruction 163 0xa3 :if_icmpgt 3)
-(instruction 164 0xa4 :if_icmple 3)
-(instruction 165 0xa5 :if_acmpeq 3)
-(instruction 166 0xa6 :if_acmpne 3)
-(instruction 167 0xa7 :goto 3)
-(instruction 168 0xa8 :jsr 3)
+(instruction 159 0x9f :if_icmpeq [:branchoffset])
+(instruction 160 0xa0 :if_icmpne [:branchoffset])
+(instruction 161 0xa1 :if_icmplt [:branchoffset])
+(instruction 162 0xa2 :if_icmpge [:branchoffset])
+(instruction 163 0xa3 :if_icmpgt [:branchoffset])
+(instruction 164 0xa4 :if_icmple [:branchoffset])
+(instruction 165 0xa5 :if_acmpeq [:branchoffset])
+(instruction 166 0xa6 :if_acmpne [:branchoffset])
+(instruction 167 0xa7 :goto [:branchoffset])
+(instruction 168 0xa8 :jsr [:branchoffset])
 
 (instruction 169 0xa9 :ret [:byte]) ;; one embedded local var idx
 
@@ -221,36 +222,38 @@
 (instruction 179 0xb3 :putstatic [:short])
 (instruction 180 0xb4 :getfield [:short])
 (instruction 181 0xb5 :putfield [:short])
-(instruction 182 0xb6 :invokevirtual 3)
-(instruction 183 0xb7 :invokespecial 3)
-(instruction 184 0xb8 :invokestatic 3)
+(instruction 182 0xb6 :invokevirtual [:cpidx2])
+(instruction 183 0xb7 :invokespecial [:cpidx2])
+(instruction 184 0xb8 :invokestatic [:cpidx2])
 
-(instruction 185 0xb9 :invokeinterface 5)
-(instruction 186 0xba :invokedynamic 5)
+(instruction 185 0xb9 :invokeinterface [:cpidx2 :byte :zerobyte])
+(instruction 186 0xba :invokedynamic [:cpidx2 :zerobyte :zerobyte])
 
-(instruction 187 0xbb :new 3)
+(instruction 187 0xbb :new [:cpidx2])
 
-(instruction 188 0xbc :newarray 2)
-(instruction 189 0xbd :anewarray 3)
+(instruction 188 0xbc :newarray [:byte]) ;; primitive type code
+(instruction 189 0xbd :anewarray [:cpidx2])
 (instruction 190 0xbe :arraylength [])
 (instruction 191 0xbf :athrow [])
 
-(instruction 192 0xc0 :checkcast 3)
-(instruction 193 0xc1 :instanceof 3)
+(instruction 192 0xc0 :checkcast [:cpidx2])
+(instruction 193 0xc1 :instanceof [:cpidx2])
 (instruction 194 0xc2 :monitorenter [])
 (instruction 195 0xc3 :monitorexit [])
 
 (instruction 196 0xc4 :wide :special)
 
-(instruction 197 0xc5 :multianewarray 4)
+(instruction 197 0xc5 :multianewarray [:cpidx2 :byte]) ;; type + dimensions
 (instruction 198 0xc6 :ifnull [:short]) ;; branchbyte
-(instruction 199 0xc7 :ifnonnull 3)
+(instruction 199 0xc7 :ifnonnull [:branchoffset])
 
-(instruction 200 0xc8 :goto_w [:int]) ;; four bytes int totals of 5
+(instruction 200 0xc8 :goto_w [:branchoffset4]) ;; four bytes int totals of 5
 
-(instruction 201 0xc9 :jsr_w 5)
+(instruction 201 0xc9 :jsr_w [:branchoffset4])
 
 ;; reserved
 ; (instruction 202 0xca :breakpoint ?)
 ; (instruction 254 0xfe :impdep1 ?)
 ; (instruction 255 0xff :impdep2 ?)
+
+nil
