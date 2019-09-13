@@ -244,7 +244,7 @@
 (instruction 196 0xc4 :wide :special)
 
 (instruction 197 0xc5 :multianewarray [:cpidx2 :byte]) ;; type + dimensions
-(instruction 198 0xc6 :ifnull [:short]) ;; branchbyte
+(instruction 198 0xc6 :ifnull [:branchoffset])
 (instruction 199 0xc7 :ifnonnull [:branchoffset])
 
 (instruction 200 0xc8 :goto_w [:branchoffset4]) ;; four bytes int totals of 5

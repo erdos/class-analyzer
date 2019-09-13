@@ -42,7 +42,7 @@
   (case a
     :cpidx2 (read-unsigned-short) ;; index in the constant pool
     :cpidx1 (read-unsigned-byte)  ;; index in the constant pool
-    :branchoffset (read-unsigned-short) ;; branch offset 2 bytes
+    :branchoffset (read-unsigned-short) ;; branch offset 2 bytes TODO: signed??
     :branchoffset4 (read-int) ;; 4 byte branch offset - maybe unsignded?
     :zerobyte (doto (read-byte) (-> zero? (assert "Expected zero byte!")))
     :byte (read-byte)
@@ -50,7 +50,7 @@
     :short (read-short)))
 
 (defmethod read-op :default [{:keys [mnemonic args]}]
-  (assert (vector? args))
+  (assert (vector? args) (str "Not vector:  " (pr-str args)))
   (let [read (mapv read-arg args)]
     {:args read
      :vals (mapv (fn [code value]
@@ -59,7 +59,6 @@
                  args read)}))
 
 (defmethod read-op :tableswitch [_]
-  (assert false "Not impled!")
   (dotimes [_ (- 4 (mod @*byte-offset* 4))] (read-byte))
   (let [low     (read-int)
         high    (read-int)
@@ -69,6 +68,23 @@
      :high    high
      :default default
      :offsets offsets}))
+
+(defmethod read-op :lookupswitch [_]
+  (let [n (- 4 (mod @*byte-offset* 4))]
+    ; (assert false (str :n n))
+    (dotimes [_ n] (read-byte))) ;; 0-3 byte offset
+  (let [default     (read-int)
+        npairs      (read-int)
+        ; _ (assert false (str :npairs npairs :default default))
+        match+offset (doall (for [i (range npairs)]
+                              {:match (read-int)
+                               :offset (read-int)}))]
+    ;(assert false (str (pr-str match+offset)))
+    {:default default
+     :offsets match+offset}))
+
+(defmethod read-op :wide [_]
+  (assert false "Not impled! w"))
 
 (defn- read-code [^InputStream istream]
   (binding [*byte-offset* (atom 0)
@@ -80,11 +96,16 @@
              :while (< offset code-length)
              :let [opcode (read-unsigned-byte)
                    instruction-map (get instructions opcode)]]
-         (assoc (read-op instruction-map)
-                :op-code opcode
-                :mnemonic (:mnemonic instruction-map)
-                :offset offset
-                :nr     i))))))
+         (try
+           (assoc (read-op instruction-map)
+                  :op-code opcode
+                  :mnemonic (:mnemonic instruction-map)
+                  :offset offset
+                  :nr     i)
+           (catch Exception e
+             (throw (ex-info "No code item" {:opcode opcode} e)))))
+
+       ))))
 
 (->
  [

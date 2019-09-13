@@ -1,4 +1,4 @@
-(ns class-analyzer.javap-test
+(ns ^:javap class-analyzer.javap-test
   (:require [class-analyzer.javap :refer :all]
             [class-analyzer.jar :as j]
             [class-analyzer.core :as c]
@@ -15,24 +15,20 @@
   (clojure.string/split-lines (with-out-str (render (j/zip-open-file file class c/read-class)))))
 
 (defn- javap-output [file class]
-  (clojure.string/split-lines (:out (sh "javap"  "-classpath" file class))))
+  (clojure.string/split-lines (:out (sh "javap" "-classpath" file "-c" class))))
+
+(defn test-javap-output-matches [class-name]
+  (println "Testing" class-name)
+  (testing class-name
+    (is (= (javap-output example-jar class-name)
+           (own-output example-jar (str (.replace (str class-name) "." "/") ".class"))))))
 
 #_
 (deftest all-clojure-classes
-  (->>
-   (sort (j/jar-classes example-jar))
-   (reverse)
-   ; (filter #(.startsWith (str %) "clojure.lang."))
-   ;; (drop-while #(not (.startsWith (str %) "clojure.lang.Binding")))
-   ;; (filter #(.endsWith (str %) "TransactionalHashMap"))
-   (pmap (fn [class-name ]
-           (println "Testing" class-name)
-           (testing class-name
-             (is (= (javap-output example-jar class-name)
-                    (own-output example-jar (str (.replace (str class-name) "." "/") ".class")))))))
-   doall))
+  (->> (sort (j/jar-classes example-jar))
+       (reverse)
+       (pmap test-javap-output-matches)
+       (doall)))
 
-
-;; (render (j/zip-open-file example-jar "clojure/lang/Compiler.class" c/read-class))
-
-;; (clojure.pprint/pprint (j/zip-open-file example-jar "clojure/lang/TransactionalHashMap.class" c/read-class))
+(deftest t1
+  (test-javap-output-matches "clojure.asm.TypePath"))

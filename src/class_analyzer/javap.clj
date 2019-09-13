@@ -2,6 +2,7 @@
   (:require [class-analyzer.core :as c]
             [class-analyzer.signature :as signature]))
 
+(require 'class-analyzer.code)
 
 (set! *warn-on-reflection* true)
 
@@ -68,7 +69,10 @@
 
     (print \space)
     (print (:name f))
-    (println ";")))
+    (println ";")
+
+    (println) ;; only when code is printed!!
+    ))
 
 
 (defn print-method-args [obj m]
@@ -100,8 +104,7 @@
        (print))
       (print ">"))))
 
-
-(defn- print-ctor [obj m]
+(defn- print-m-ctor [obj m]
   (if-let [as (render-accessors (:access m))]
     (print \space as)
     (print \space))
@@ -137,21 +140,31 @@
 
 (defn- print-code-attribute [attribute]
   (assert (= "Code" (:name attribute)))
-  (println "\tCode:")
+  (println "    Code:")
   (doseq [code (:code attribute)]
-    (printf "\t%4d: %s"
+    (printf "    %4d: %s"
             (:offset code)
             (name (:mnemonic code)))
-    (when-let [x (first (:vals code))]
+    (if-let [x (first (:vals code))]
       ;; itt dinamikusan szamoljuk a szokozoket.
-      (let [spaces (apply str (repeat (- 14 (count (name (:mnemonic code)))) " "))]
-        (print (str spaces "#" (first (:args code)))))
-      (case (:discriminator x)
-        :methodref (print (str "\t\t// Method " (:class x) ".\"" (:name x) "\":" (:type x)))
-        :fieldref  (print (str "\t\t// Field " (:name x) ":" (:type x)))
-        :class     (print (str "\t\t// class " (first (:data x))))))
-    (println)))
-
+      (let [spaces (apply str (repeat (- 14 (count (name (:mnemonic code)))) " "))
+            rightpad  (fn [s n] (apply str s (repeat (- n (count (str s))) " ")))]
+        (print (str spaces "#" (rightpad (first (:args code)) 19)))
+        (case (:discriminator x)
+          :methodref (print (str "// Method " (:class x) ".\"" (:name x) "\":" (:type x)))
+          :fieldref  (print (str "// Field " (:name x) ":" (:type x)))
+          :class     (print (str "// class " (first (:data x))))))
+      (let [spaces (apply str (repeat (- 14 (count (name (:mnemonic code)))) " "))
+            rightpad  (fn [s n] (apply str s (repeat (- n (count (str s))) " ")))]
+        (when-let [a (first (:args code))]
+          (print (str spaces (+ (:offset code) a)))) ;; in case of branchbyte
+        )
+      )
+    #_(when-not (first (:vals code))
+      (print (pr-str code)))
+    (println))
+  (println))
+#_
 (print-code-attribute
  {:name "Code",
   :max-stack 2,
@@ -231,9 +244,11 @@
   (when (or (not (:private (:access m)))
             (= "<clinit>" (:name m)))
     (case (:name m)
-      "<init>"   (print-ctor obj m)
+      "<init>"   (print-m-ctor obj m)
       "<clinit>" (print-static-init obj m)
-      (print-method obj m))))
+      (print-method obj m))
+    (when-let [code (some #(when (= "Code" (:name %)) %) (:attrs m))]
+      (print-code-attribute code))))
 
 
 (defn render [obj]
