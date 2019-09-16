@@ -137,7 +137,6 @@
   (print-throws obj m)
   (println ";"))
 
-
 (defn- print-code-attribute [attribute]
   (assert (= "Code" (:name attribute)))
   (println "    Code:")
@@ -148,10 +147,11 @@
     (if-let [x (first (:vals code))]
       ;; itt dinamikusan szamoljuk a szokozoket.
       (let [spaces (apply str (repeat (- 14 (count (name (:mnemonic code)))) " "))
-            rightpad  (fn [s n] (apply str s (repeat (- n (count (str s))) " ")))]
+            rightpad  (fn [s n] (apply str s (repeat (- n (count (str s))) " ")))
+            mname     (fn [s] (if (= "<init>" s) (pr-str s) s))]
         (print (str spaces "#" (rightpad (first (:args code)) 19)))
         (case (:discriminator x)
-          :methodref (print (str "// Method " (:class x) ".\"" (:name x) "\":" (:type x)))
+          :methodref (print (str "// Method " (:class x) "." (mname (:name x)) ":" (:type x)))
           :fieldref  (print (str "// Field " (:name x) ":" (:type x)))
           :class     (print (str "// class " (first (:data x))))))
       (let [spaces (apply str (repeat (- 14 (count (name (:mnemonic code)))) " "))
