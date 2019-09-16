@@ -7,12 +7,6 @@
 ;; code number to descr
 (def instructions {})
 
-(defmacro ^:private codetable [& elems]
-  (->> (for [[n _ code] (partition 3 elems)]
-         [(int n) (keyword code)])
-       (into {})
-       (list 'def 'codes)))
-
 (defmacro instruction [opcode hex-opcode mnemonic args]
   (assert (= opcode hex-opcode))
   (assert (keyword? mnemonic))
@@ -255,5 +249,7 @@
 ; (instruction 202 0xca :breakpoint ?)
 ; (instruction 254 0xfe :impdep1 ?)
 ; (instruction 255 0xff :impdep2 ?)
+
+(def mnemonic->args (memoize (fn [m] (some #(when (= m (:mnemonic %)) (:args %)) (vals instructions)))))
 
 nil

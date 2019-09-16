@@ -42,7 +42,7 @@
   (case a
     :cpidx2 (read-unsigned-short) ;; index in the constant pool
     :cpidx1 (read-unsigned-byte)  ;; index in the constant pool
-    :branchoffset (read-unsigned-short) ;; branch offset 2 bytes TODO: signed??
+    :branchoffset (read-short) ;; branch offset 2 bytes TODO: signed yes??
     :branchoffset4 (read-int) ;; 4 byte branch offset - maybe unsignded?
     :zerobyte (doto (read-byte) (-> zero? (assert "Expected zero byte!")))
     :byte (read-byte)

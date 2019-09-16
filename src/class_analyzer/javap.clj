@@ -1,6 +1,7 @@
 (ns class-analyzer.javap
   (:require [class-analyzer.core :as c]
-            [class-analyzer.signature :as signature]))
+            [class-analyzer.signature :as signature]
+            [class-analyzer.opcodes :refer [mnemonic->args]]))
 
 (require 'class-analyzer.code)
 
@@ -137,7 +138,8 @@
   (print-throws obj m)
   (println ";"))
 
-(defn- print-code-attribute [attribute]
+(defn- print-code-attribute [current-class attribute]
+  (assert (symbol? current-class))
   (assert (= "Code" (:name attribute)))
   (println "    Code:")
   (doseq [code (:code attribute)]
@@ -148,18 +150,28 @@
       ;; itt dinamikusan szamoljuk a szokozoket.
       (let [spaces (apply str (repeat (- 14 (count (name (:mnemonic code)))) " "))
             rightpad  (fn [s n] (apply str s (repeat (- n (count (str s))) " ")))
+            full? (not= (.replace (str (:class x)) "/" ".") (name current-class)) ;; fully qualified class?
             mname     (fn [s] (if (= "<init>" s) (pr-str s) s))]
         (print (str spaces "#" (rightpad (first (:args code)) 19)))
         (case (:discriminator x)
-          :methodref (print (str "// Method " (:class x) "." (mname (:name x)) ":" (:type x)))
-          :fieldref  (print (str "// Field " (:name x) ":" (:type x)))
-          :class     (print (str "// class " (first (:data x))))))
+          :methodref (print (str "// Method " (when full? (str (:class x) ".")) (mname (:name x)) ":" (:type x)))
+          :fieldref  (print (str "// Field " (when full? (str (:class x) "."))  (:name x) ":" (:type x)))
+          :class     (print (str "// class " (doto (:data x) (-> string? assert))  ))))
       (let [spaces (apply str (repeat (- 14 (count (name (:mnemonic code)))) " "))
             rightpad  (fn [s n] (apply str s (repeat (- n (count (str s))) " ")))]
         (when-let [a (first (:args code))]
-          (print (str spaces (+ (:offset code) a)))) ;; in case of branchbyte
-        )
-      )
+          (cond
+
+          (= [:branchoffset] (mnemonic->args (:mnemonic code)))
+          (print (str spaces (+ (:offset code) a)))
+
+          (= [:byte :byte] (mnemonic->args (:mnemonic code)))
+          (print (str spaces (first (:args code)) ", " (second (:args code))))
+
+          (= [:byte] (mnemonic->args (:mnemonic code)))
+          (print (str spaces a))
+
+          ))))
     #_(when-not (first (:vals code))
       (print (pr-str code)))
     (println))
@@ -248,7 +260,7 @@
       "<clinit>" (print-static-init obj m)
       (print-method obj m))
     (when-let [code (some #(when (= "Code" (:name %)) %) (:attrs m))]
-      (print-code-attribute code))))
+      (print-code-attribute (:class obj) code))))
 
 
 (defn render [obj]
@@ -292,5 +304,4 @@
   (run! (partial print-method* obj) (:methods obj))
 
   (println "}")
-  #_
-  (clojure.pprint/pprint obj))
+  nil)
