@@ -38,5 +38,5 @@
 
 (defn zip-open-file [input-file class-name reader-fn]
   (let [[zis fs] (zip-open input-file)]
-    (with-open [zis zis]
+    (with-open [zis ^java.io.InputStream zis]
       (first (for [f fs :when (= f class-name)] (reader-fn zis))))))
