@@ -59,18 +59,18 @@
                  args read)}))
 
 (defmethod read-op :tableswitch [_]
-  (dotimes [_ (- 4 (mod @*byte-offset* 4))] (read-byte))
-  (let [low     (read-int)
+  (dotimes [_ (mod (- 4 (mod @*byte-offset* 4)) 4)] (read-byte))
+  (let [default (read-int)
+        low     (read-int)
         high    (read-int)
-        default (read-int)
-        offsets (doall (for [i (range (-> high (- low) (+ 1)))] (read-int)))]
+        offsets (into {} (for [i (range low (inc high))] [i (read-int)]))]
     {:low     low
      :high    high
      :default default
      :offsets offsets}))
 
 (defmethod read-op :lookupswitch [_]
-  (let [n (- 4 (mod @*byte-offset* 4))]
+  (let [n (mod (- 4 (mod @*byte-offset* 4)) 4)]
     ; (assert false (str :n n))
     (dotimes [_ n] (read-byte))) ;; 0-3 byte offset
   (let [default     (read-int)

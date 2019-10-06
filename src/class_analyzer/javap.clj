@@ -142,6 +142,7 @@
   (assert (symbol? current-class))
   (assert (= "Code" (:name attribute)))
   (println "    Code:")
+
   (doseq [code (:code attribute)]
     (printf "    %4d: %s"
             (:offset code)
@@ -159,6 +160,13 @@
           :class     (print (str "// class " (doto (:data x) (-> string? assert))  ))))
       (let [spaces (apply str (repeat (- 14 (count (name (:mnemonic code)))) " "))
             rightpad  (fn [s n] (apply str s (repeat (- n (count (str s))) " ")))]
+        (when   (= :tableswitch (:mnemonic code))
+          (println "   { //" (:low code) "to" (+ (:high code))) ;; TODO: dynamic values
+          (doseq [[k v] (:offsets code)]
+            (printf "                     %d: %d\n" k (+ (:offset code) v))) ;; TODO: dynamic leftpad
+          (println  "               default:" (+ (:offset code) (:default code)))
+          (print "          }")
+          )
         (when-let [a (first (:args code))]
           (cond
 
@@ -172,84 +180,8 @@
           (print (str spaces a))
 
           ))))
-    #_(when-not (first (:vals code))
-      (print (pr-str code)))
     (println))
   (println))
-#_
-(print-code-attribute
- {:name "Code",
-  :max-stack 2,
-  :max-locals 2,
-  :code
-  '({:args [],
-    :vals [],
-    :op-code 42,
-    :mnemonic :aload_0,
-    :offset 0,
-    :nr 0}
-   {:args [1],
-    :vals
-
-    [{:discriminator :methodref,
-      :data [4 22],
-      :class "java/lang/Object",
-      :name "<init>",
-      :type "()V"}],
-    :op-code 183,
-    :mnemonic :invokespecial,
-    :offset 1,
-    :nr 1}
-   {:args [],
-    :vals [],
-    :op-code 42,
-    :mnemonic :aload_0,
-    :offset 4,
-    :nr 2}
-   {:args [],
-    :vals [],
-    :op-code 43,
-    :mnemonic :aload_1,
-    :offset 5,
-    :nr 3}
-   {:args [2],
-    :vals
-    [{:discriminator :fieldref,
-      :data [3 23],
-      :class "clojure/lang/Volatile",
-      :name "val",
-      :type "Ljava/lang/Object;"}],
-    :op-code 181,
-    :mnemonic :putfield,
-    :offset 6,
-    :nr 4}
-   {:args [],
-    :vals [],
-    :op-code 177,
-    :mnemonic :return,
-    :offset 9,
-    :nr 5}),
-  :exception-table (),
-  :attrs
-  ({:name "LineNumberTable",
-    :value
-    ({:start-pc 0, :line-number 17}
-     {:start-pc 4, :line-number 18}
-     {:start-pc 9, :line-number
-      19})}
-   {:name "LocalVariableTable",
-    :value
-    ({:start-pc 0,
-      :length 10,
-      :name-idx "this",
-      :descr-idx "Lclojure/lang/Volatile;",
-      :index 0}
-     {:start-pc 0,
-      :length 10,
-      :name-idx "val",
-      :descr-idx "Ljava/lang/Object;",
-      :index 1})})})
-
 
 
 (defn print-method* [obj m]
