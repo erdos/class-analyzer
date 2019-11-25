@@ -76,7 +76,7 @@
   (reduce-kv
    (fn [acc k v]
      (case (:discriminator v)
-       (:fieldref :methodref :interfacemethodred)
+       (:fieldref :methodref :interfacemethodref)
        (update acc k assoc
                :class (-> v :data first acc :data str!)
                :name  (-> v :data second acc :name str!)

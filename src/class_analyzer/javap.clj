@@ -158,6 +158,12 @@
             mname     (fn [s] (if (= "<init>" s) (pr-str s) s))]
         (print (str spaces "#" (rightpad (first (:args code)) 19)))
         (case (:discriminator x)
+          :string    (print (str "// String " (:data x)))
+          (:long :float :double :boolean :short :char :int)
+          (print ) ;; TODO: write!
+
+
+          :interfacemethodref (print (str "// InterfaceMethod " (when full? (str (:class x) ".")) (mname (:name x)) ":" (:type x)))
           :methodref (print (str "// Method " (when full? (str (:class x) ".")) (mname (:name x)) ":" (:type x)))
           :fieldref  (print (str "// Field " (when full? (str (:class x) "."))  (:name x) ":" (:type x)))
           :class     (print (str "// class " (doto (:data x) (-> string? assert))  ))))
