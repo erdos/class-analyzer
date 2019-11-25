@@ -1,39 +1,30 @@
 # bytecode-explorer
 
-A disassemler for Java class files written in Clojure.
+A disassemler for Java Class files written in Clojure.
+
+
 
 ## Usage
 
-FIXME
-
-## Features
-
-- dfs
-
-## Is it any good?
-
-Yes.
+Run on a class file from the Clojure source code.
 
 
 ```
-$ diff <(javap ) <(javap-clj)
-...
+lein run -- -c  clojure/asm/TypePath.class 
 ```
 
-In some scenarios it is even faster than javap.
-```
-time javap afddf
-123ms
-```
+You can check that the output is the same as with javap:
 
 ```
-time afaf-adsfasfd
-50ms
+javap -c clojure.asm.TypePath
 ```
+
 
 ## Testing
 
-Run all tests. This runs javap on all classes: `$ lein test :javap`
+Run unit tests with `$ lein test` command.
+
+Run javap comparison tests with: `$ lein test :javap`
 
 ## License
 
