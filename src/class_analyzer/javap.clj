@@ -59,6 +59,7 @@
 
 (defn- print-field [f]
   (when (not (:private (:access f)))
+    (println)
     (if-let [a (render-accessors (:access f))]
       (print (str \space \space a))
       (print \space))
@@ -72,7 +73,7 @@
     (print (:name f))
     (println ";")
 
-    (println) ;; only when code is printed!!
+    ; (println) ;; only when code is printed!!
     ))
 
 
@@ -180,11 +181,11 @@
           (print (str spaces a))
 
           ))))
-    (println))
-  (println))
+    (println)))
 
 
 (defn print-method* [obj m]
+  (println)
   (when (or (not (:private (:access m)))
             (= "<clinit>" (:name m)))
     (case (:name m)
@@ -229,7 +230,7 @@
         (print (if interface? " extends" " implements")
                (clojure.string/join "," is)))))
 
-  (println " {")
+  (print " {")
 
   (run! print-field (:fields obj))
 
