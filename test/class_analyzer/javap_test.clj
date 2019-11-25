@@ -12,7 +12,11 @@
 (def example-jar (str home "/.m2/repository/org/clojure/clojure/1.10.1/clojure-1.10.1.jar"))
 
 (defn- own-output [file class]
-  (clojure.string/split-lines (with-out-str (render (j/zip-open-file file class c/read-class)))))
+  (binding [*print-code* true]
+    (clojure.string/split-lines
+     (with-out-str
+       (render
+        (j/zip-open-file file class c/read-class))))))
 
 (defn- javap-output [file class]
   (clojure.string/split-lines (:out (sh "javap" "-classpath" file "-c" class))))
@@ -32,4 +36,5 @@
 
 (deftest t1 (test-javap-output-matches "clojure.asm.TypePath"))
 
+#_
 (deftest t1-interface (test-javap-output-matches "clojure.lang.Associative"))
