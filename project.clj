@@ -5,4 +5,5 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :test-selectors {:javap :javap
                    :default (complement :javap)}
+  :main class-analyzer.main/main
   :dependencies [[org.clojure/clojure "1.10.1"]])

@@ -30,5 +30,6 @@
        (pmap test-javap-output-matches)
        (doall)))
 
-(deftest t1
-  (test-javap-output-matches "clojure.asm.TypePath"))
+(deftest t1 (test-javap-output-matches "clojure.asm.TypePath"))
+
+(deftest t1-interface (test-javap-output-matches "clojure.lang.Associative"))

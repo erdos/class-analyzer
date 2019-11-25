@@ -1,4 +1,5 @@
 (ns class-analyzer.javap
+  (:refer-clojure :exclude [print-method])
   (:require [class-analyzer.core :as c]
             [class-analyzer.signature :as signature]
             [class-analyzer.opcodes :refer [mnemonic->args]]))
@@ -10,7 +11,8 @@
 
 (def ^:dynamic *verbose* false)
 (def ^:dynamic *level* :public) ;; :public :protected :package :private
-
+(def ^:dynamic *print-code* false) ;; show compiled code
+(def ^:dynamic *print-signatures* false) ;; print internal type signatures
 
 (defn- render-accessors [m]
   (->>
@@ -59,7 +61,7 @@
 
 (defn- print-field [f]
   (when (not (:private (:access f)))
-    (println)
+
     (if-let [a (render-accessors (:access f))]
       (print (str \space \space a))
       (print \space))
@@ -72,7 +74,7 @@
     (print \space)
     (print (:name f))
     (println ";")
-
+    (when *print-code* (println))
     ; (println) ;; only when code is printed!!
     ))
 
@@ -185,16 +187,23 @@
 
 
 (defn print-method* [obj m]
-  (println)
+
   (when (or (not (:private (:access m)))
             (= "<clinit>" (:name m)))
     (case (:name m)
       "<init>"   (print-m-ctor obj m)
       "<clinit>" (print-static-init obj m)
       (print-method obj m))
-    (when-let [code (some #(when (= "Code" (:name %)) %) (:attrs m))]
-      (print-code-attribute (:class obj) code))))
+    (when *print-code*
+      (when-let [code (some #(when (= "Code" (:name %)) %) (:attrs m))]
+        (print-code-attribute (:class obj) code)))))
 
+(defn- run-print! [f items]
+  (when (seq items)
+    (f (first items))
+    (doseq [i (next items)]
+      (println)
+      (f i))))
 
 (defn render [obj]
   (when-let [sf (some #(when (= "SourceFile" (:name %)) (:value %)) (:attributes obj))]
@@ -230,11 +239,11 @@
         (print (if interface? " extends" " implements")
                (clojure.string/join "," is)))))
 
-  (print " {")
+  (println " {")
 
   (run! print-field (:fields obj))
 
-  (run! (partial print-method* obj) (:methods obj))
+  ((if *print-code* run-print! run!) (partial print-method* obj) (:methods obj))
 
   (println "}")
   nil)
