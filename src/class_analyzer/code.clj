@@ -71,15 +71,12 @@
 
 (defmethod read-op :lookupswitch [_]
   (let [n (mod (- 4 (mod @*byte-offset* 4)) 4)]
-    ; (assert false (str :n n))
     (dotimes [_ n] (read-byte))) ;; 0-3 byte offset
   (let [default     (read-int)
         npairs      (read-int)
-        ; _ (assert false (str :npairs npairs :default default))
         match+offset (doall (for [i (range npairs)]
                               {:match (read-int)
                                :offset (read-int)}))]
-    ;(assert false (str (pr-str match+offset)))
     {:default default
      :offsets match+offset}))
 
@@ -103,25 +100,7 @@
                   :offset offset
                   :nr     i)
            (catch Exception e
-             (throw (ex-info "No code item" {:opcode opcode} e)))))
-
-       ))))
-
-(->
- [
-  0x00 0x00 0x00 0x04 ;; int 1
-
-  0x00 ;; NOP
-  0x03 ;; iconst_0
-  0x10 ;; bipush
-  0x11 ;; constant arg
-  ]
- (byte-array)
- (ByteArrayInputStream.)
- (DataInputStream.)
- (read-code)
-
- )
+             (throw (ex-info "No code item" {:opcode opcode} e)))))))))
 
 (defn read-exception-table []
   (doall
