@@ -158,7 +158,7 @@
             mname     (fn [s] (if (= "<init>" s) (pr-str s) s))]
         (print (str spaces "#" (rightpad (first (:args code)) 19)))
         (case (:discriminator x)
-          :string    (print (str "// String " (:data x)))
+          :string    (print (str "// String " (-> (:data x) str (.replaceAll "\\s+$" ""))))
           (:long :float :double :boolean :short :char :int)
           (print ) ;; TODO: write!
 
