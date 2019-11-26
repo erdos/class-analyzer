@@ -1,4 +1,5 @@
 (ns class-analyzer.main
+  (:gen-class)
   (:require [class-analyzer.core :as core]
             [class-analyzer.javap :as javap]
             [class-analyzer.jar :as jar]
@@ -39,7 +40,7 @@
         (assoc opts :files (cons a args)))
       opts)))
 
-(defn main [& args]
+(defn -main [& args]
   (let [parsed (parse-args args)]
 
     (when (:version parsed)
