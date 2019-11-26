@@ -33,12 +33,24 @@
         ;; version info in the front
         ("-version")      (recur args (assoc opts :version? true))
 
+        "--x-timed"       (recur args (assoc opts :timed? true))
+
         ;; arg separator
         "--"              (assoc opts :files args)
 
         ;; default case: list of files
         (assoc opts :files (cons a args)))
       opts)))
+
+(defmacro logging [enabled? text body]
+  `(if ~enabled?
+     (let [start# (System/currentTimeMillis)]
+       (try
+         ~body
+         (finally
+           (let [end# (System/currentTimeMillis)]
+             (println ~text "took" (- end# start#) "milliseconds.")))))
+     ~body))
 
 (defn -main [& args]
   (let [parsed (parse-args args)]
@@ -51,5 +63,7 @@
               javap/*print-signatures* (:signatures parsed false)]
       (doseq [file (:files parsed)
               :let [class-stream (io/input-stream (io/file file))
-                    parsed (core/read-class class-stream)]]
+                    parsed (logging (:timed? parsed)
+                                    "Parsing class file"
+                                    (core/read-class class-stream))]]
         (javap/render parsed)))))
