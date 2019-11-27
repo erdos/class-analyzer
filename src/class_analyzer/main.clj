@@ -3,7 +3,8 @@
   (:require [class-analyzer.core :as core]
             [class-analyzer.javap :as javap]
             [class-analyzer.jar :as jar]
-            [clojure.java.io :as io]))
+            [clojure.java.io :as io]
+            [clojure.pprint]))
 
 (defn- parse-args [args]
   (loop [args args
@@ -35,6 +36,9 @@
 
         "--x-timed"       (recur args (assoc opts :timed? true))
 
+        ;; pretty print model
+        "--x-edn"           (recur args (assoc opts :edn? true))
+
         ;; arg separator
         "--"              (assoc opts :files args)
 
@@ -63,7 +67,9 @@
               javap/*print-signatures* (:signatures parsed false)]
       (doseq [file (:files parsed)
               :let [class-stream (io/input-stream (io/file file))
-                    parsed (logging (:timed? parsed)
+                    data (logging (:timed? parsed)
                                     "Parsing class file"
                                     (core/read-class class-stream))]]
-        (javap/render parsed)))))
+        (if (:edn? parsed)
+          (clojure.pprint/pprint data)
+          (javap/render data))))))
