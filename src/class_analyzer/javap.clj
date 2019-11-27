@@ -152,13 +152,16 @@
             (name (:mnemonic code)))
     (if-let [x (first (:vals code))]
       ;; itt dinamikusan szamoljuk a szokozoket.
-      (let [spaces (apply str (repeat (- 14 (count (name (:mnemonic code)))) " "))
+      (let [spaces (apply str (repeat (max 1(- 14 (count (name (:mnemonic code))))) " "))
             rightpad  (fn [s n] (apply str s (repeat (- n (count (str s))) " ")))
             full? (not= (.replace (str (:class x)) "/" ".") (name current-class)) ;; fully qualified class?
             mname     (fn [s] (if (= "<init>" s) (pr-str s) s))]
-        (print (str spaces "#" (rightpad (first (:args code)) 19)))
+
+        (if-let [second-arg (second (:args code))]
+          (print (str spaces "#" (rightpad (str (first (:args code)) ",  " second-arg) 17)))
+          (print (str spaces "#" (rightpad (first (:args code)) 19))))
         (case (:discriminator x)
-          :string    (print (str "// String " (-> (:data x) str (.replaceAll "\\s+$" ""))))
+          :string    (print (str "// String " (-> (:data x) str (.replaceAll "\n" "\\\\n") (.replaceAll "\\s+$" ""))))
           (:long :float :double :boolean :short :char :int)
           (print ) ;; TODO: write!
 
@@ -185,7 +188,7 @@
           (= [:byte :byte] (mnemonic->args (:mnemonic code)))
           (print (str spaces (first (:args code)) ", " (second (:args code))))
 
-          (= [:byte] (mnemonic->args (:mnemonic code)))
+          (#{[:byte] [:short]} (mnemonic->args (:mnemonic code)))
           (print (str spaces a))
 
           ))))
