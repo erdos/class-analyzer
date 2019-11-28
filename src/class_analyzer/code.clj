@@ -104,11 +104,16 @@
 
 (defn read-exception-table []
   (doall
-   (for [i (range (read-short))]
-     {:start-pc   (read-short)
-      :end-pc     (read-short)
-      :handler-pc (read-short)
-      :catch-type (read-short) ;; class info in constant pool
+   (for [i (range (read-short))
+         :let [start   (read-short)
+               end     (read-short)
+               handler (read-short)
+               catch-idx (read-short)]]
+     {:start-pc   start
+      :end-pc     end
+      :handler-pc handler
+      :catch-type-idx catch-idx ;; class info in constant pool
+      :catch-type (if (zero? catch-idx) :any (pr-str (get *constant-pool* catch-idx)))
       })))
 
 

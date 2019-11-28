@@ -113,6 +113,44 @@
    (for [i (range (.readUnsignedShort dis))]
      (-> dis .readUnsignedShort constant-pool :data ->class-name))))
 
+(defn- read-verification-type-info [^DataInputStream d]
+  (case (.readUnsignedByte d)
+    0 {:item :top}
+    1 {:item :integer}
+    2 {:item :float}
+    4 {:item :long}
+    3 {:item :double}
+    5 {:item :null}
+    6 {:item :uninitialized-this}
+    7 {:item       :object
+       :object-idx (.readUnsignedShort d)}
+    8 {:item       :uninitialized-variable
+       :offset     (.readUnsignedShort d)}))
+
+(defmethod read-attribute "StackMapTable" [_ ^DataInputStream dis _ _ constant-pool]
+  (doall
+    (for [i (range (.readUnsignedShort dis))
+          :let [d (.readUnsignedByte dis)]]
+      (cond (<= 0 d 63)   {:type :same-frame}
+            (<= 64 d 127) {:type :same_locals_1_stack_item_frame
+                           :stack (read-verification-type-info dis)}
+            (= 247 d)     {:type :same_locals_1_stack_item_frame_extended
+                           :offset-delta (.readUnsignedShort dis)
+                           :stack (read-verification-type-info dis)}
+            (<= 248 d 250) {:type :chop-frame
+                            :offset-delta (.readUnsignedShort dis)}
+            (= 251 d)      {:type :same-frame-extended
+                            :offset-delta (.readUnsignedShort dis)}
+            (<= 252 d 254) {:type :append-frame
+                            :offset-delta (.readUnsignedShort dis)
+                            :data (vec (repeatedly (- d 251) (partial read-verification-type-info dis)))}
+            (= 255 d)      {:type :full-frame
+                            :offset-delta (.readUnsignedShort dis)
+                            :locals (vec (repeatedly (.readUnsignedShort dis)
+                                                     (partial read-verification-type-info dis)))
+                            :stack  (vec (repeatedly (.readUnsignedShort dis)
+                                                     (partial read-verification-type-info dis)))}))))
+
 
 (defn read-attributes [discriminator ^java.io.DataInputStream ois constant-pool]
   (doall

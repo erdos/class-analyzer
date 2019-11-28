@@ -21,20 +21,26 @@
 (defn- javap-output [file class]
   (clojure.string/split-lines (:out (sh "javap" "-classpath" file "-c" class))))
 
+;; we use this to compare lines without whitespce changes
+(defn- is-seq-eq [expected actual]
+  (is (= (count expected) (count actual)) "Lengths do not match!")
+  (doseq [[e a] (map vector expected actual)
+          :when (not= (.replaceAll (str e) " " "") (.replaceAll (str a) " " ""))]
+     (is (= e a))))
+
 (defn test-javap-output-matches [class-name]
   (println "Testing" class-name)
   (testing class-name
-    (is (= (javap-output example-jar class-name)
-           (own-output example-jar (str (.replace (str class-name) "." "/") ".class"))))))
+    (is-seq-eq (javap-output example-jar class-name)
+               (own-output example-jar (str (.replace (str class-name) "." "/") ".class")))))
 
-#_
 (deftest all-clojure-classes
   (->> (sort (j/jar-classes example-jar))
        (reverse)
-       (pmap test-javap-output-matches)
+       (map test-javap-output-matches)
        (doall)))
 
-(deftest t1 (test-javap-output-matches "clojure.asm.TypePath"))
+(deftest t1 (test-javap-output-matches "clojure.zip__init"))
 
 #_
 (deftest t1-interface (test-javap-output-matches "clojure.lang.Associative"))

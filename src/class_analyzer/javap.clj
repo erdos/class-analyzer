@@ -141,6 +141,13 @@
   (print-throws obj m)
   (println ";"))
 
+(defn- ^String str-unq [^String s]
+  (assert (string? s))
+  (if (.startsWith s "\"") (.substring s 1 (- (count s) 1)) s))
+
+(defn class-name [^String s]
+  (if (.startsWith s "[") (str "\"" s "\"") s))
+
 (defn- print-code-attribute [current-class attribute]
   (assert (symbol? current-class))
   (assert (= "Code" (:name attribute)))
@@ -161,15 +168,15 @@
           (print (str spaces "#" (rightpad (str (first (:args code)) ",  " second-arg) 17)))
           (print (str spaces "#" (rightpad (first (:args code)) 19))))
         (case (:discriminator x)
-          :string    (print (str "// String " (-> (:data x) str (.replaceAll "\n" "\\\\n") (.replaceAll "\\s+$" ""))))
+          :string    (print (str "// String " (-> (:data x) str pr-str str-unq (.replaceAll "\\s+$" ""))))
           (:long :float :double :boolean :short :char :int)
-          (print ) ;; TODO: write!
-
+          (print "//" (name (:discriminator x))
+                      (str (:data x) ({:long "l"} (:discriminator x))))
 
           :interfacemethodref (print (str "// InterfaceMethod " (when full? (str (:class x) ".")) (mname (:name x)) ":" (:type x)))
           :methodref (print (str "// Method " (when full? (str (:class x) ".")) (mname (:name x)) ":" (:type x)))
           :fieldref  (print (str "// Field " (when full? (str (:class x) "."))  (:name x) ":" (:type x)))
-          :class     (print (str "// class " (doto (:data x) (-> string? assert))  ))))
+          :class     (print (str "// class " (class-name (doto (:data x) (-> string? assert)))))))
       (let [spaces (apply str (repeat (- 14 (count (name (:mnemonic code)))) " "))
             rightpad  (fn [s n] (apply str s (repeat (- n (count (str s))) " ")))]
         (when   (= :tableswitch (:mnemonic code))
@@ -192,7 +199,15 @@
           (print (str spaces a))
 
           ))))
-    (println)))
+    (println))
+
+    (when-let [table (seq (:exception-table attribute))]
+      (println "    Exception table:")
+      (println "       from    to  target type")
+      (doseq [row table]
+        (println "         " (:start-pc row) "  " (:end-pc row) "  " (:handler-pc row) " "
+           (if (= :any (:catch-type row)) "any" (str "Class " (:data (:catch-type row))))
+           ))))
 
 
 (defn print-method* [obj m]
