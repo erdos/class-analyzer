@@ -209,18 +209,16 @@
            (if (= :any (:catch-type row)) "any" (str "Class " (:data (:catch-type row))))
            ))))
 
+(defn method-visible? [m] (or (not (:private (:access m))) (= "<clinit>" (:name m))))
 
 (defn print-method* [obj m]
-
-  (when (or (not (:private (:access m)))
-            (= "<clinit>" (:name m)))
-    (case (:name m)
-      "<init>"   (print-m-ctor obj m)
-      "<clinit>" (print-static-init obj m)
-      (print-method obj m))
-    (when *print-code*
-      (when-let [code (some #(when (= "Code" (:name %)) %) (:attrs m))]
-        (print-code-attribute (:class obj) code)))))
+  (case (:name m)
+    "<init>"   (print-m-ctor obj m)
+    "<clinit>" (print-static-init obj m)
+    (print-method obj m))
+  (when *print-code*
+    (when-let [code (some #(when (= "Code" (:name %)) %) (:attrs m))]
+      (print-code-attribute (:class obj) code))))
 
 (defn- run-print! [f items]
   (when (seq items)
@@ -267,7 +265,9 @@
 
   (run! print-field (:fields obj))
 
-  ((if *print-code* run-print! run!) (partial print-method* obj) (:methods obj))
-
+  (->>
+    (:methods obj)
+    (filter method-visible?)
+    ((if *print-code* run-print! run!) (partial print-method* obj)))
   (println "}")
   nil)
