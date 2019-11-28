@@ -168,7 +168,7 @@
           (print (str spaces "#" (rightpad (str (first (:args code)) ",  " second-arg) 17)))
           (print (str spaces "#" (rightpad (first (:args code)) 19))))
         (case (:discriminator x)
-          :string    (print (str "// String " (-> (:data x) str pr-str str-unq (.replaceAll "\\s+$" ""))))
+          :string    (print (str "// String" (-> (:data x) (->> (str " ")) (.replace "\"" "\\\"") (.replace "\n" "\\n") (.replaceAll "\\s+$" ""))))
           (:long :float :double :boolean :short :char :int)
           (print "//" (name (:discriminator x))
                       (str (:data x) ({:long "l"} (:discriminator x))))
