@@ -31,8 +31,8 @@
 (defn test-javap-output-matches [class-name]
   (println "Testing" class-name)
   (testing class-name
-    (is-seq-eq (javap-output example-jar class-name)
-               (own-output example-jar (str (.replace (str class-name) "." "/") ".class")))))
+    (is (= (javap-output example-jar class-name)
+           (own-output example-jar (str (.replace (str class-name) "." "/") ".class"))))))
 
 (deftest all-clojure-classes
   (->> (sort (j/jar-classes example-jar))
@@ -40,7 +40,7 @@
        (map test-javap-output-matches)
        (doall)))
 
-(deftest t1 (test-javap-output-matches "clojure.zip__init"))
+;(deftest t1 (test-javap-output-matches "clojure.test$get_possibly_unbound_var"))
 
 #_
 (deftest t1-interface (test-javap-output-matches "clojure.lang.Associative"))
