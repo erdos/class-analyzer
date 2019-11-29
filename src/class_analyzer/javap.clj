@@ -186,21 +186,18 @@
           :class     (print (str "// class " (class-name (doto (:data x) (-> string? assert)))))))
       (let [spaces (apply str (repeat (- 14 (count (name (:mnemonic code)))) " "))
             rightpad  (fn [s n] (apply str s (repeat (- n (count (str s))) " ")))]
-        (when   (= :tableswitch (:mnemonic code))
+        (when (= :tableswitch (:mnemonic code))
           (println "   { //" (:low code) "to" (+ (:high code))) ;; TODO: dynamic values
           (doseq [[k v] (:offsets code)]
             (printf "                     %d: %d\n" k (+ (:offset code) v))) ;; TODO: dynamic leftpad
           (println  "               default:" (+ (:offset code) (:default code)))
-          (print "          }")
-          )
-
-          (when   (= :lookupswitch (:mnemonic code))
-            (println "   { //" (count (:offsets code))) ;; TODO: dynamic values
-            (doseq [{:keys [match offset]} (:offsets code)]
-              (printf "                     %d: %d\n" match (+ (:offset code) offset))) ;; TODO: dynamic leftpad
-            (println  "               default:" (+ (:offset code) (:default code)))
-            (print "          }")
-            )
+          (print "          }"))
+        (when (= :lookupswitch (:mnemonic code))
+          (println "  { //" (count (:offsets code))) ;; TODO: dynamic values
+          (doseq [{:keys [match offset]} (:offsets code)]
+            (printf "                     %d: %d\n" match (+ (:offset code) offset))) ;; TODO: dynamic leftpad
+          (println  "               default:" (+ (:offset code) (:default code)))
+          (print "          }"))
         (when-let [a (first (:args code))]
           (cond
 
