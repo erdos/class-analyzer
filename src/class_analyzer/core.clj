@@ -76,6 +76,11 @@
   (reduce-kv
    (fn [acc k v]
      (case (:discriminator v)
+       :invokedynamic (update acc k assoc
+                              :bootstrap-method-attr-idx (-> v :data first)
+                              :method-name (-> v :data second acc :name)
+                              :method-type (-> v :data second acc :type))
+
        (:fieldref :methodref :interfacemethodref)
        (update acc k assoc
                :class (-> v :data first acc :data str!)

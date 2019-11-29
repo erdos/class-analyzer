@@ -163,7 +163,7 @@
             (name (:mnemonic code)))
     (if-let [x (first (:vals code))]
       ;; itt dinamikusan szamoljuk a szokozoket.
-      (let [spaces (apply str (repeat (max 1(- 14 (count (name (:mnemonic code))))) " "))
+      (let [spaces (apply str (repeat (max 1 (- 14 (count (name (:mnemonic code))))) " "))
             rightpad  (fn [s n] (apply str s (repeat (- n (count (str s))) " ")))
             full? (not= (.replace (str (:class x)) "/" ".") (name current-class)) ;; fully qualified class?
             mname     (fn [s] (if (= "<init>" s) (pr-str s) s))]
@@ -175,7 +175,10 @@
           :string    (print (str "// String" (-> (:data x) (->> (str " ")) (.replace "\"" "\\\"") (.replace "\n" "\\n") (.replaceAll "\\s+$" ""))))
           (:long :float :double :boolean :short :char :integer)
           (print "//" (name (:discriminator x))
-                      (str (:data x) ({:long "l"} (:discriminator x))))
+                      (str (:data x) ({:long "l" :double "d" :float "f"} (:discriminator x))))
+
+          :invokedynamic
+          (print "//" "InvokeDynamic" (str "#" (:bootstrap-method-attr-idx x) ":" (:method-name x) ":" (:method-type x)))
 
           :interfacemethodref (print (str "// InterfaceMethod " (when full? (str (:class x) ".")) (mname (:name x)) ":" (:type x)))
           :methodref (print (str "// Method " (when full? (str (:class x) ".")) (mname (:name x)) ":" (:type x)))
@@ -198,6 +201,17 @@
 
           (= [:byte :byte] (mnemonic->args (:mnemonic code)))
           (print (str spaces (first (:args code)) ", " (second (:args code))))
+
+          (= [:typecode] (mnemonic->args (:mnemonic code)))
+          (print spaces  (case (int a)
+                               4 'boolean
+                               5 'char
+                               6 'float
+                               7 'double
+                               8 'byte
+                               9 'short
+                               10 'int
+                               11 'long))
 
           (#{[:byte] [:short]} (mnemonic->args (:mnemonic code)))
           (print (str spaces a))

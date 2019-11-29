@@ -225,7 +225,7 @@
 
 (instruction 187 0xbb :new [:cpidx2])
 
-(instruction 188 0xbc :newarray [:byte]) ;; primitive type code
+(instruction 188 0xbc :newarray [:typecode]) ;; primitive type code
 (instruction 189 0xbd :anewarray [:cpidx2])
 (instruction 190 0xbe :arraylength [])
 (instruction 191 0xbf :athrow [])

@@ -45,7 +45,7 @@
     :branchoffset (read-short) ;; branch offset 2 bytes TODO: signed yes??
     :branchoffset4 (read-int) ;; 4 byte branch offset - maybe unsignded?
     :zerobyte (doto (read-byte) (-> zero? (assert "Expected zero byte!")))
-    :byte (read-byte)
+    (:byte :typecode) (read-byte)
     :int (read-int)
     :short (read-short)))
 
@@ -54,8 +54,9 @@
   (let [read (mapv read-arg args)]
     {:args read
      :vals (mapv (fn [code value]
-                   (when (#{:cpidx1 :cpidx2} code)
-                     (-> value *constant-pool*)))
+                   (case code
+                     (:cpidx1 :cpidx2) (-> value *constant-pool*)
+                      nil))
                  args read)}))
 
 (defmethod read-op :tableswitch [_]
