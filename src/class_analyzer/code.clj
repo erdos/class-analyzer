@@ -64,7 +64,7 @@
   (let [default (read-int)
         low     (read-int)
         high    (read-int)
-        offsets (into {} (for [i (range low (inc high))] [i (read-int)]))]
+        offsets (into (sorted-map) (for [i (range low (inc high))] [i (read-int)]))]
     {:low     low
      :high    high
      :default default
