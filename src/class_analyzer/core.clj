@@ -22,7 +22,7 @@
     10 [:methodref [(.readUnsignedShort ois) (.readUnsignedShort ois)]] ;; tag + class idx + nameandtype idx
     8  [:string (.readUnsignedShort ois)]
 
-    3  [:integer (.readInt ois)] ;; int, short, char, byte, boolean
+    3  [:int (.readInt ois)] ;; int, short, char, byte, boolean
     4  [:float   (.readFloat ois)]
 
     ;; special - 8 byte

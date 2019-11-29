@@ -173,7 +173,7 @@
           (print (str spaces "#" (rightpad (first (:args code)) 19))))
         (case (:discriminator x)
           :string    (print (str "// String" (-> (:data x) (->> (str " ")) (.replace "\"" "\\\"") (.replace "\n" "\\n") (.replaceAll "\\s+$" ""))))
-          (:long :float :double :boolean :short :char :integer)
+          (:long :float :double :boolean :short :char :int)
           (print "//" (name (:discriminator x))
                       (str (:data x) ({:long "l" :double "d" :float "f"} (:discriminator x))))
 
@@ -193,6 +193,14 @@
           (println  "               default:" (+ (:offset code) (:default code)))
           (print "          }")
           )
+
+          (when   (= :lookupswitch (:mnemonic code))
+            (println "   { //" (count (:offsets code))) ;; TODO: dynamic values
+            (doseq [{:keys [match offset]} (:offsets code)]
+              (printf "                     %d: %d\n" match (+ (:offset code) offset))) ;; TODO: dynamic leftpad
+            (println  "               default:" (+ (:offset code) (:default code)))
+            (print "          }")
+            )
         (when-let [a (first (:args code))]
           (cond
 
