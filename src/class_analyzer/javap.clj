@@ -148,6 +148,10 @@
 (defn class-name [^String s]
   (if (.startsWith s "[") (str "\"" s "\"") s))
 
+(defn- str-right [n s]
+  (let [s (str s)]
+    (str (apply str (repeat (max 1 (- n (count s))) " ")) s)))
+
 (defn- print-code-attribute [current-class attribute]
   (assert (symbol? current-class))
   (assert (= "Code" (:name attribute)))
@@ -205,9 +209,10 @@
       (println "    Exception table:")
       (println "       from    to  target type")
       (doseq [row table]
-        (println "         " (:start-pc row) "  " (:end-pc row) "  " (:handler-pc row) " "
-           (if (= :any (:catch-type row)) "any" (str "Class " (:data (:catch-type row))))
-           ))))
+        (println (str (str-right 12 (:start-pc row)) (str-right 6 (:end-pc row)) (str-right 6 (:handler-pc row))) " "
+           (if (= :any (:catch-type row))
+             "any"
+             (str "Class " (:data (:catch-type row))))))))
 
 (defn method-visible? [m] (or (not (:private (:access m))) (= "<clinit>" (:name m))))
 

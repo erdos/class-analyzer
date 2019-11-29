@@ -113,7 +113,7 @@
       :end-pc     end
       :handler-pc handler
       :catch-type-idx catch-idx ;; class info in constant pool
-      :catch-type (if (zero? catch-idx) :any (pr-str (get *constant-pool* catch-idx)))
+      :catch-type (if (zero? catch-idx) :any (get *constant-pool* catch-idx))
       })))
 
 
