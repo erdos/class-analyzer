@@ -152,6 +152,14 @@
   (let [s (str s)]
     (str (apply str (repeat (max 1 (- n (count s))) " ")) s)))
 
+(defn- printable-string [^String s]
+  (-> s
+      (.replace "\"" "\\\"")
+      (.replace "\t" "\\t")
+      (.replace "\n" "\\n")
+      (.replace "\r" "\\r")
+      (.replaceAll " +$" "")))
+
 (defn- print-code-attribute [current-class attribute]
   (assert (symbol? current-class))
   (assert (= "Code" (:name attribute)))
@@ -174,7 +182,8 @@
           (print (str spaces "#" (first (:args code)))))
         (while (< @col 44) (print " "))
         (case (:discriminator x)
-          :string    (print (str "// String" (-> (:data x) (->> (str " ")) (.replace "\"" "\\\"") (.replace "\n" "\\n") (.replaceAll "\\s+$" ""))))
+          :string    (print (str "// String"
+                               (when-let [p (not-empty (printable-string (:data x)))] (str " " p))))
           (:long :float :double :boolean :short :char :int)
           (print "//" (name (:discriminator x))
                       (str (:data x) ({:long "l" :double "d" :float "f"} (:discriminator x))))

@@ -82,7 +82,7 @@
      :offsets match+offset}))
 
 (defmethod read-op :wide [_]
-  (assert false "Not impled! w"))
+  (assert false "Not impled! wide ops."))
 
 (defn- read-code [^InputStream istream]
   (binding [*byte-offset* (atom 0)
