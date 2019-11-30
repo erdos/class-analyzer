@@ -181,7 +181,7 @@
           (print "//" "InvokeDynamic" (str "#" (:bootstrap-method-attr-idx x) ":" (:method-name x) ":" (:method-type x)))
 
           :interfacemethodref (print (str "// InterfaceMethod " (when full? (str (:class x) ".")) (mname (:name x)) ":" (:type x)))
-          :methodref (print (str "// Method " (when full? (str (:class x) ".")) (mname (:name x)) ":" (:type x)))
+          :methodref (print (str "// Method " (when full? (str (class-name (:class x)) ".")) (mname (:name x)) ":" (:type x)))
           :fieldref  (print (str "// Field " (when full? (str (:class x) "."))  (:name x) ":" (:type x)))
           :class     (print (str "// class " (class-name (doto (:data x) (-> string? assert)))))))
       (let [spaces (apply str (repeat (- 14 (count (name (:mnemonic code)))) " "))
@@ -189,13 +189,13 @@
         (when (= :tableswitch (:mnemonic code))
           (println "   { //" (:low code) "to" (+ (:high code))) ;; TODO: dynamic values
           (doseq [[k v] (:offsets code)]
-            (printf "                     %d: %d\n" k (+ (:offset code) v))) ;; TODO: dynamic leftpad
+            (println (str-right 23 (str k ":")) (+ (:offset code) v)))
           (println  "               default:" (+ (:offset code) (:default code)))
           (print "          }"))
         (when (= :lookupswitch (:mnemonic code))
           (println "  { //" (count (:offsets code))) ;; TODO: dynamic values
           (doseq [{:keys [match offset]} (:offsets code)]
-            (printf "                     %d: %d\n" match (+ (:offset code) offset))) ;; TODO: dynamic leftpad
+            (println (str-right 23 (str match ":")) (+ (:offset code) offset)))
           (println  "               default:" (+ (:offset code) (:default code)))
           (print "          }"))
         (when-let [a (first (:args code))]
