@@ -1,10 +1,9 @@
 (ns class-analyzer.javap
   (:refer-clojure :exclude [print-method])
   (:require [class-analyzer.core :as c]
+            [class-analyzer.code]
             [class-analyzer.signature :as signature]
-            [class-analyzer.opcodes :refer [mnemonic->args]]))
-
-(require 'class-analyzer.code)
+            [class-analyzer.opcodes :as opcodes]))
 
 (set! *warn-on-reflection* true)
 
@@ -210,16 +209,20 @@
           (println  "               default:" (+ (:offset code) (:default code)))
           (print "          }"))
         (when-let [a (first (:args code))]
-          (cond
+          (let [arg-names (:arg-types code)]
+            (cond
 
-          (= [:branchoffset] (mnemonic->args (:mnemonic code)))
-          (print (str spaces (+ (:offset code) a)))
+              (= [:branchoffset] arg-names)
+              (print (str spaces (+ (:offset code) a)))
 
-          (= [:byte :byte] (mnemonic->args (:mnemonic code)))
-          (print (str spaces (first (:args code)) ", " (second (:args code))))
+              (= [:byte :byte] arg-names)
+              (print (str spaces (first (:args code)) ", " (second (:args code))))
 
-          (= [:typecode] (mnemonic->args (:mnemonic code)))
-          (print spaces  (case (int a)
+              (= [:short :short] arg-names)
+              (print (str spaces (first (:args code)) ", " (second (:args code))))
+
+              (= [:typecode] arg-names)
+              (print spaces  (case (int a)
                                4 'boolean
                                5 'char
                                6 'float
@@ -229,10 +232,10 @@
                                10 'int
                                11 'long))
 
-          (#{[:byte] [:short]} (mnemonic->args (:mnemonic code)))
-          (print (str spaces a))
+              (#{[:byte] [:short]} arg-names)
+              (print (str spaces a))
 
-          ))))
+              )))))
     (println))
 
     (when-let [table (seq (:exception-table attribute))]

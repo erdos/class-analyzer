@@ -250,6 +250,23 @@
 ; (instruction 254 0xfe :impdep1 ?)
 ; (instruction 255 0xff :impdep2 ?)
 
-(def mnemonic->args (memoize (fn [m] (some #(when (= m (:mnemonic %)) (:args %)) (vals instructions)))))
+(def type->wide
+  {:cpidx1 :cpidx2
+   :byte :short})
+
+(def mnemonic->wide
+  {:iinc   :iinc_w
+   :iload  :iload_w
+   :fload  :float_w
+   :aload  :aload_w
+   :lload  :lload_w
+   :dload  :dload_w
+   :istore :istore_w
+   :fstore :fstore_w
+   :astore :astore_w
+   :lstore :store_w
+   :dstore :dstore_w
+   :ret    :ret_w
+   })
 
 nil

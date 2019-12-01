@@ -53,6 +53,8 @@
   (assert (vector? args) (str "Not vector:  " (pr-str args)))
   (let [read (mapv read-arg args)]
     {:args read
+     :arg-types args
+     :mnemonic mnemonic
      :vals (mapv (fn [code value]
                    (case code
                      (:cpidx1 :cpidx2) (-> value *constant-pool*)
@@ -82,7 +84,11 @@
      :offsets match+offset}))
 
 (defmethod read-op :wide [_]
-  (assert false "Not impled! wide ops."))
+  (-> (read-unsigned-byte)
+      (instructions)
+      (update :mnemonic mnemonic->wide)
+      (update :args (partial mapv type->wide))
+      (read-op)))
 
 (defn- read-code [^InputStream istream]
   (binding [*byte-offset* (atom 0)
@@ -95,11 +101,11 @@
              :let [opcode (read-unsigned-byte)
                    instruction-map (get instructions opcode)]]
          (try
-           (assoc (read-op instruction-map)
-                  :op-code opcode
-                  :mnemonic (:mnemonic instruction-map)
-                  :offset offset
-                  :nr     i)
+           (merge {:op-code opcode
+                   :mnemonic (:mnemonic instruction-map)
+                   :offset offset
+                   :nr     i}
+                  (read-op instruction-map))
            (catch Exception e
              (throw (ex-info "No code item" {:opcode opcode} e)))))))))
 
@@ -122,18 +128,15 @@
   ;; TODO: discriminator is either method or class?
   (core/read-attributes :method *input-stream* *constant-pool*))
 
-(defn read-code-attribute []
-  (binding [*byte-offset* (atom 0)]
+(defmethod core/read-attribute "Code" [_ ^DataInputStream dis _ _ constant-pool]
+  (binding [*constant-pool* constant-pool
+            *input-stream* dis
+            *byte-offset* (atom 0)]
     {:max-stack       (read-short)
      :max-locals      (read-short)
      :code            (read-code *input-stream*)
      :exception-table (read-exception-table)
      :attrs           (read-attributes)}))
-
-(defmethod core/read-attribute "Code" [_ ^DataInputStream dis _ _ constant-pool]
-  (binding [*constant-pool* constant-pool
-            *input-stream* dis]
-    (read-code-attribute)))
 
 (defmethod core/read-attribute "LineNumberTable" [_ ^DataInputStream dis _ _ constant-pool]
   (doall
