@@ -5,14 +5,12 @@ A disassembler library for Java Class files.
 The purpose of the project is to provide an idiomatic Clojure framework for
 disassembling Java Class files based on the [Java Virtual Machine Specification](https://docs.oracle.com/javase/specs/jvms/se7/html/index.html).
 
-It is also a fun topic to learn about the quirks and oddities of one of the most
-significant codebase in the modern software ecosystem.
+It is also a fun topic to learn about the quirks and oddities of a commonly used VM ecosystem.
 
 The program is validated by running it on a selection of class files on the
-developer's `~/.m2` folder. For testing, an output layer is provided that renders
-in the same format as `javap` does. It is expected to give the very same output
-as the `javap` command. It is just like a reimplementation of the standard Java
-disassembler written in Clojure.
+developer's `~/.m2` folder. For testing purposes, an output layer is provided that renders
+in the same format as `javap` does and we validate that every byte of the outputs match. Therefore,
+it can be also used as a drop-in replacement of the standard Java disassembler.
 
 ![Written in Clojure](https://img.shields.io/github/languages/top/erdos/class-analyzer)
 [![Hello Visitors](http://hits.dwyl.io/erdos/class-analyzer.svg)](http://hits.dwyl.io/erdos/class-analyzer)
